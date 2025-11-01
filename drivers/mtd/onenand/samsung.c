@@ -968,8 +968,10 @@ static int s3c_onenand_probe(struct platform_device *pdev)
 		if (r) {
 			init_completion(&onenand->complete);
 			s5pc110_dma_ops = s5pc110_dma_irq;
-			err = request_irq(r->start, s5pc110_onenand_irq,
-					IRQF_SHARED, "onenand", &onenand);
+			err = devm_request_irq(&pdev->dev, r->start,
+					       s5pc110_onenand_irq,
+					       IRQF_SHARED, "onenand",
+					       onenand);
 			if (err) {
 				dev_err(&pdev->dev, "failed to get irq\n");
 				goto scan_failed;
