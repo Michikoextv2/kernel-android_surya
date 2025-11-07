@@ -127,6 +127,19 @@ int tipc_net_start(struct net *net, u32 addr)
 	return 0;
 }
 
+void tipc_sched_net_finalize(struct net *net, u32 addr)
+{
+	struct tipc_net_work *fwork = kzalloc(sizeof(*fwork), GFP_ATOMIC);
+
+	if (!fwork)
+		return;
+	INIT_WORK(&fwork->work, tipc_net_finalize_work);
+	fwork->net = net;
+	fwork->addr = addr;
+	schedule_work(&fwork->work);
+}
+}
+
 void tipc_net_stop(struct net *net)
 {
 	struct tipc_net *tn = net_generic(net, tipc_net_id);
