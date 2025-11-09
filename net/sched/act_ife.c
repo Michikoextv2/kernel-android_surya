@@ -563,14 +563,22 @@ static int tcf_ife_dump(struct sk_buff *skb, struct tc_action *a, int bind,
 {
 	unsigned char *b = skb_tail_pointer(skb);
 	struct tcf_ife_info *ife = to_ife(a);
-	struct tc_ife opt = {
-		.index = ife->tcf_index,
-		.refcnt = ife->tcf_refcnt - ref,
-		.bindcnt = ife->tcf_bindcnt - bind,
-		.action = ife->tcf_action,
-		.flags = ife->flags,
-	};
+	struct tcf_ife_params *p;
+	struct tc_ife opt;
 	struct tcf_t t;
+
+	memset(&opt, 0, sizeof(opt));
+
+	opt.index = ife->tcf_index,
+	opt.refcnt = refcount_read(&ife->tcf_refcnt) - ref,
+	opt.bindcnt = atomic_read(&ife->tcf_bindcnt) - bind,
+
+	spin_lock_bh(&ife->tcf_lock);
+	opt.action = ife->tcf_action;
+	p = rcu_dereference_protected(ife->params,
+				      lockdep_is_held(&ife->tcf_lock));
+	opt.flags = p->flags;
+	spin_unlock_bh(&ife->tcf_lock);
 
 	if (nla_put(skb, TCA_IFE_PARMS, sizeof(opt), &opt))
 		goto nla_put_failure;
