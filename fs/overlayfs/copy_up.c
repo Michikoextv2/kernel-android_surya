@@ -352,15 +352,14 @@ static int ovl_link_up(struct ovl_copy_up_ctx *c)
 			       c->dentry->d_name.len);
 	err = PTR_ERR(upper);
 	if (!IS_ERR(upper)) {
-		err = ovl_do_link(ovl_dentry_upper(c->dentry), udir, upper,
-				  true);
-		dput(upper);
+		err = ovl_do_link(ovl_dentry_upper(c->dentry), udir, upper);
 
 		if (!err) {
 			/* Restore timestamps on parent (best effort) */
 			ovl_set_timestamps(upperdir, &c->pstat);
 			ovl_dentry_set_upper_alias(c->dentry);
 		}
+		dput(upper);
 	}
 	inode_unlock(udir);
 	ovl_set_nlink_upper(c->dentry);
