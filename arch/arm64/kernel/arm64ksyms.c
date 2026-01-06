@@ -50,7 +50,6 @@ EXPORT_SYMBOL(strchr);
 EXPORT_SYMBOL(strrchr);
 EXPORT_SYMBOL(strcmp);
 EXPORT_SYMBOL(strncmp);
-EXPORT_SYMBOL(strlen);
 EXPORT_SYMBOL(strnlen);
 EXPORT_SYMBOL(memcmp);
 EXPORT_SYMBOL(memchr);
