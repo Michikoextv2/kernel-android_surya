@@ -263,6 +263,14 @@ static int schedutil_rate_limit_us = 20000; /* µs */
 static int schedutil_pl = 0; /* 0/1 */
 static int schedutil_iowait_boost_max = 0; /* hz or freq units per platform */
 
+/* forward declare handlers so the proc table can reference them */
+static int gaming_schedutil_rate_handler(struct ctl_table *table, int write,
+                                        void __user *buffer, size_t *lenp, loff_t *ppos);
+static int gaming_schedutil_pl_handler(struct ctl_table *table, int write,
+                                      void __user *buffer, size_t *lenp, loff_t *ppos);
+static int gaming_schedutil_iowait_handler(struct ctl_table *table, int write,
+                                           void __user *buffer, size_t *lenp, loff_t *ppos);
+
 static struct ctl_table gaming_table[] = {
     {
         .procname = "gaming_mode",
@@ -317,6 +325,7 @@ static struct ctl_table gaming_table[] = {
         .proc_handler = gaming_schedutil_iowait_handler,
     },
 #endif
+#ifdef CONFIG_GAMING_UCLAMP
     {
         .procname = "uclamp_boost_percent",
         .data = &uclamp_boost_percent,
@@ -378,13 +387,6 @@ static struct ctl_table gaming_table[] = {
         .proc_handler = proc_dointvec,
     },
 #endif
-    {
-        .procname = "schedutil_rate_limit_us",
-        .data = &schedutil_rate_limit_us,
-        .maxlen = sizeof(int),
-        .mode = 0644,
-        .proc_handler = gaming_schedutil_rate_handler,
-    },
     { }
 };
 

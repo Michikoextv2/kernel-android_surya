@@ -127,6 +127,16 @@ The `surya_defconfig` has been adjusted to favour a good balance between perform
 
 These defaults aim to give responsive performance during gaming while still allowing the system to conserve energy under light load.
 
+Multitasking tuning
+-------------------
+To improve responsiveness across typical multitasking workloads we applied a few conservative scheduler changes in the default configuration:
+- PELT half-life default: **10 ms** (CONFIG_PELT_UTIL_HALFLIFE_10). This provides faster ramp-up for short interactive bursts compared with longer half-lives.
+- Scheduler latency defaults: **sysctl_sched_latency = 5 ms**, **normalized = 3 ms** (previously 6 ms / 4 ms). Min-granularity defaults were adjusted proportionally (**0.5 ms / ~0.333 ms**).
+
+These are intentionally small, reversible changes to improve interactivity without significantly impacting battery life. If you need to tune further, use the provided runtime sysctls or the per-policy values under `/sys/devices/system/cpu/` to measure and iterate.
+
+
+
 The included helper script `gaming-mode-apply.sh` will try to set the CPU governor to `schedutil` and apply conservative `schedutil` rate-limits when `gaming_mode` is enabled. To reduce DVFS churn and avoid frequent micro-throttling overhead, the default schedutil rate limit is set to **20 ms (20000 µs)**. This reduces power/perf overhead from very frequent frequency switches while still keeping the system responsive.
 
 Runtime tuning

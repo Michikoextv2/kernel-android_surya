@@ -89,8 +89,8 @@ walt_dec_cfs_rq_stats(struct cfs_rq *cfs_rq, struct task_struct *p) {}
  *
  * (default: 6ms * (1 + ilog(ncpus)), units: nanoseconds)
  */
-unsigned int sysctl_sched_latency			= 6000000ULL;
-unsigned int normalized_sysctl_sched_latency		= 4000000ULL;
+unsigned int sysctl_sched_latency			= 5000000ULL; /* 5ms (was 6ms) */
+unsigned int normalized_sysctl_sched_latency		= 3000000ULL; /* 3ms (was 4ms) */
 
 /*
  * Enable/disable honoring sync flag in energy-aware wakeups.
@@ -119,8 +119,8 @@ enum sched_tunable_scaling sysctl_sched_tunable_scaling = SCHED_TUNABLESCALING_L
  *
  * (default: 0.75 msec * (1 + ilog(ncpus)), units: nanoseconds)
  */
-unsigned int sysctl_sched_min_granularity		= 600000ULL;
-unsigned int normalized_sysctl_sched_min_granularity	= 400000ULL;
+unsigned int sysctl_sched_min_granularity		= 500000ULL; /* 0.5ms (was 0.6ms) */
+unsigned int normalized_sysctl_sched_min_granularity	= 333333ULL; /* ~0.333ms (was 0.4ms) */
 
 /*
  * This value is kept at sysctl_sched_latency/sysctl_sched_min_granularity

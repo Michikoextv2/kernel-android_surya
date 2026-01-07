@@ -837,63 +837,6 @@ static int sugov_init(struct cpufreq_policy *policy)
 
 	tunables->rate_limit_us = 20000; /* default: 20ms to reduce frequent DVFS churn */
 
-/* Runtime setter used by userspace tooling via sysctl in gaming_mode.c */
-int sugov_set_rate_limit_us(unsigned int val)
-{
-	int cpu;
-	struct sugov_policy *last = NULL;
-
-	mutex_lock(&global_tunables_lock);
-	if (global_tunables)
-		global_tunables->rate_limit_us = val;
-
-	/* update existing policies' tunables and immediate delay */
-	for_each_possible_cpu(cpu) {
-		struct sugov_cpu *sc = &per_cpu(sugov_cpu, cpu);
-		struct sugov_policy *sg = sc->sg_policy;
-		if (!sg || sg == last)
-			continue;
-
-		if (sg->tunables)
-			sg->tunables->rate_limit_us = val;
-		sg->freq_update_delay_ns = val * NSEC_PER_USEC;
-		last = sg;
-	}
-
-	mutex_unlock(&global_tunables_lock);
-	return 0;
-}
-EXPORT_SYMBOL_GPL(sugov_set_rate_limit_us);
-
-int sugov_set_pl(bool val)
-{
-	struct sugov_policy *sg_policy;
-
-	mutex_lock(&global_tunables_lock);
-	if (global_tunables)
-		global_tunables->pl = val;
-
-	list_for_each_entry(sg_policy, &global_tunables->attr_set.policy_list, tunables_hook)
-		if (sg_policy->tunables)
-			sg_policy->tunables->pl = val;
-
-	mutex_unlock(&global_tunables_lock);
-	return 0;
-}
-EXPORT_SYMBOL_GPL(sugov_set_pl);
-
-int sugov_set_iowait_boost_max(unsigned int val)
-{
-	int cpu;
-
-	for_each_possible_cpu(cpu) {
-		struct sugov_cpu *sc = &per_cpu(sugov_cpu, cpu);
-		sc->iowait_boost_max = val;
-	}
-	return 0;
-}
-EXPORT_SYMBOL_GPL(sugov_set_iowait_boost_max);
-
 	policy->governor_data = sg_policy;
 	sg_policy->tunables = tunables;
 
@@ -952,6 +895,63 @@ static void sugov_exit(struct cpufreq_policy *policy)
 	sugov_policy_free(sg_policy);
 	cpufreq_disable_fast_switch(policy);
 }
+
+/* Runtime setter used by userspace tooling via sysctl in gaming_mode.c */
+int sugov_set_rate_limit_us(unsigned int val)
+{
+	int cpu;
+	struct sugov_policy *last = NULL;
+
+	mutex_lock(&global_tunables_lock);
+	if (global_tunables)
+		global_tunables->rate_limit_us = val;
+
+	/* update existing policies' tunables and immediate delay */
+	for_each_possible_cpu(cpu) {
+		struct sugov_cpu *sc = &per_cpu(sugov_cpu, cpu);
+		struct sugov_policy *sg = sc->sg_policy;
+		if (!sg || sg == last)
+			continue;
+
+		if (sg->tunables)
+			sg->tunables->rate_limit_us = val;
+		sg->freq_update_delay_ns = val * NSEC_PER_USEC;
+		last = sg;
+	}
+
+	mutex_unlock(&global_tunables_lock);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(sugov_set_rate_limit_us);
+
+int sugov_set_pl(bool val)
+{
+	struct sugov_policy *sg_policy;
+
+	mutex_lock(&global_tunables_lock);
+	if (global_tunables)
+		global_tunables->pl = val;
+
+	list_for_each_entry(sg_policy, &global_tunables->attr_set.policy_list, tunables_hook)
+		if (sg_policy->tunables)
+			sg_policy->tunables->pl = val;
+
+	mutex_unlock(&global_tunables_lock);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(sugov_set_pl);
+
+int sugov_set_iowait_boost_max(unsigned int val)
+{
+	int cpu;
+
+	for_each_possible_cpu(cpu) {
+		struct sugov_cpu *sc = &per_cpu(sugov_cpu, cpu);
+		sc->iowait_boost_max = val;
+	}
+	return 0;
+}
+EXPORT_SYMBOL_GPL(sugov_set_iowait_boost_max);
 
 static int sugov_start(struct cpufreq_policy *policy)
 {
