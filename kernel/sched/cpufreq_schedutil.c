@@ -16,6 +16,7 @@
 #include <uapi/linux/sched/types.h>
 #include <linux/slab.h>
 #include <linux/sched/sysctl.h>
+#include <linux/cpumask.h>
 #include "sched.h"
 
 #define SUGOV_KTHREAD_PRIORITY	50
@@ -834,7 +835,35 @@ static int sugov_init(struct cpufreq_policy *policy)
 		goto stop_kthread;
 	}
 
-	tunables->rate_limit_us = 2000;
+	tunables->rate_limit_us = 20000; /* default: 20ms to reduce frequent DVFS churn */
+
+/* Runtime setter used by userspace tooling via sysctl in gaming_mode.c */
+int sugov_set_rate_limit_us(unsigned int val)
+{
+	int cpu;
+	struct sugov_policy *last = NULL;
+
+	mutex_lock(&global_tunables_lock);
+	if (global_tunables)
+		global_tunables->rate_limit_us = val;
+
+	/* update existing policies' tunables and immediate delay */
+	for_each_possible_cpu(cpu) {
+		struct sugov_cpu *sc = &per_cpu(sugov_cpu, cpu);
+		struct sugov_policy *sg = sc->sg_policy;
+		if (!sg || sg == last)
+			continue;
+
+		if (sg->tunables)
+			sg->tunables->rate_limit_us = val;
+		sg->freq_update_delay_ns = val * NSEC_PER_USEC;
+		last = sg;
+	}
+
+	mutex_unlock(&global_tunables_lock);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(sugov_set_rate_limit_us);
 
 	policy->governor_data = sg_policy;
 	sg_policy->tunables = tunables;

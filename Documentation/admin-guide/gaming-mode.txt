@@ -49,6 +49,7 @@ Sysctls (/proc/sys/gaming)
 - uclamp_bucket0..uclamp_bucket3 : bucket raw values (0..1024)
 - uclamp_task            : write "<pid> <bucket>" to assign a bucket to a pid
 - uclamp_by_name         : write "<comm_name> <bucket>" to assign to all tasks with matching comm
+- schedutil_rate_limit_us : schedutil governor rate limit in microseconds (write to change runtime)
 
 Quick usage examples
 --------------------
@@ -124,7 +125,22 @@ The `surya_defconfig` has been adjusted to favour a good balance between perform
 
 These defaults aim to give responsive performance during gaming while still allowing the system to conserve energy under light load.
 
-The included helper script `gaming-mode-apply.sh` will try to set the CPU governor to `schedutil` and apply conservative `schedutil` rate-limits (quick up, moderate down) when `gaming_mode` is enabled. This provides a good balance between responsiveness and battery life without requiring manual tuning.
+The included helper script `gaming-mode-apply.sh` will try to set the CPU governor to `schedutil` and apply conservative `schedutil` rate-limits when `gaming_mode` is enabled. To reduce DVFS churn and avoid frequent micro-throttling overhead, the default schedutil rate limit is set to **20 ms (20000 µs)**. This reduces power/perf overhead from very frequent frequency switches while still keeping the system responsive.
+
+Runtime tuning
+--------------
+You can tune `schedutil` rate limits at runtime via the new sysctl (requires `CONFIG_CPU_FREQ_GOV_SCHEDUTIL` enabled):
+
+# check current value
+cat /proc/sys/gaming/schedutil_rate_limit_us
+
+# set to 40ms
+echo 40000 > /proc/sys/gaming/schedutil_rate_limit_us
+
+The value is applied immediately to the schedutil governor; you can verify per-policy values under:
+
+/sys/devices/system/cpu/cpufreq/*/schedutil_*  (prints configured value)
+
 Usage
 -----
 # Enable gaming mode immediately

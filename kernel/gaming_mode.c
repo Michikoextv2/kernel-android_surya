@@ -7,6 +7,10 @@
 #include <linux/sched/sysctl.h>
 #include <linux/sched/signal.h>
 #include <net/sock.h>
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDUTIL
+/* forward declare setter implemented in cpufreq_schedutil.c */
+int sugov_set_rate_limit_us(unsigned int val);
+#endif
 
 /* normalized_sysctl_sched_latency is defined in kernel/sched/fair.c */
 extern unsigned int normalized_sysctl_sched_latency;
@@ -253,6 +257,8 @@ static int gaming_mode_handler(struct ctl_table *table, int write,
     return 0;
 }
 
+static int schedutil_rate_limit_us = 20000; /* µs */
+
 static struct ctl_table gaming_table[] = {
     {
         .procname = "gaming_mode",
@@ -283,6 +289,16 @@ static struct ctl_table gaming_table[] = {
         .mode = 0644,
         .proc_handler = proc_dointvec,
     },
+#endif
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDUTIL
+    {
+        .procname = "schedutil_rate_limit_us",
+        .data = &schedutil_rate_limit_us,
+        .maxlen = sizeof(int),
+        .mode = 0644,
+        .proc_handler = gaming_schedutil_rate_handler,
+    },
+#endif
     {
         .procname = "uclamp_boost_percent",
         .data = &uclamp_boost_percent,
@@ -344,8 +360,33 @@ static struct ctl_table gaming_table[] = {
         .proc_handler = proc_dointvec,
     },
 #endif
+    {
+        .procname = "schedutil_rate_limit_us",
+        .data = &schedutil_rate_limit_us,
+        .maxlen = sizeof(int),
+        .mode = 0644,
+        .proc_handler = gaming_schedutil_rate_handler,
+    },
     { }
 };
+
+static int gaming_schedutil_rate_handler(struct ctl_table *table, int write,
+                                        void __user *buffer, size_t *lenp, loff_t *ppos)
+{
+    int ret;
+
+    ret = proc_dointvec(table, write, buffer, lenp, ppos);
+    if (ret != 0)
+        return ret;
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDUTIL
+    if (write) {
+        /* Update schedutil governor tunables at runtime */
+        sugov_set_rate_limit_us((unsigned int)schedutil_rate_limit_us);
+    }
+#endif
+    return 0;
+}
 
 static struct ctl_table gaming_dir[] = {
     {
