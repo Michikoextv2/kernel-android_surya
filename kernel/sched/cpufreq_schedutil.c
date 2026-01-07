@@ -865,6 +865,35 @@ int sugov_set_rate_limit_us(unsigned int val)
 }
 EXPORT_SYMBOL_GPL(sugov_set_rate_limit_us);
 
+int sugov_set_pl(bool val)
+{
+	struct sugov_policy *sg_policy;
+
+	mutex_lock(&global_tunables_lock);
+	if (global_tunables)
+		global_tunables->pl = val;
+
+	list_for_each_entry(sg_policy, &global_tunables->attr_set.policy_list, tunables_hook)
+		if (sg_policy->tunables)
+			sg_policy->tunables->pl = val;
+
+	mutex_unlock(&global_tunables_lock);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(sugov_set_pl);
+
+int sugov_set_iowait_boost_max(unsigned int val)
+{
+	int cpu;
+
+	for_each_possible_cpu(cpu) {
+		struct sugov_cpu *sc = &per_cpu(sugov_cpu, cpu);
+		sc->iowait_boost_max = val;
+	}
+	return 0;
+}
+EXPORT_SYMBOL_GPL(sugov_set_iowait_boost_max);
+
 	policy->governor_data = sg_policy;
 	sg_policy->tunables = tunables;
 

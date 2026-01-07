@@ -8,8 +8,10 @@
 #include <linux/sched/signal.h>
 #include <net/sock.h>
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDUTIL
-/* forward declare setter implemented in cpufreq_schedutil.c */
+/* forward declare setters implemented in cpufreq_schedutil.c */
 int sugov_set_rate_limit_us(unsigned int val);
+int sugov_set_pl(bool val);
+int sugov_set_iowait_boost_max(unsigned int val);
 #endif
 
 /* normalized_sysctl_sched_latency is defined in kernel/sched/fair.c */
@@ -258,6 +260,8 @@ static int gaming_mode_handler(struct ctl_table *table, int write,
 }
 
 static int schedutil_rate_limit_us = 20000; /* µs */
+static int schedutil_pl = 0; /* 0/1 */
+static int schedutil_iowait_boost_max = 0; /* hz or freq units per platform */
 
 static struct ctl_table gaming_table[] = {
     {
@@ -297,6 +301,20 @@ static struct ctl_table gaming_table[] = {
         .maxlen = sizeof(int),
         .mode = 0644,
         .proc_handler = gaming_schedutil_rate_handler,
+    },
+    {
+        .procname = "schedutil_pl",
+        .data = &schedutil_pl,
+        .maxlen = sizeof(int),
+        .mode = 0644,
+        .proc_handler = gaming_schedutil_pl_handler,
+    },
+    {
+        .procname = "schedutil_iowait_boost_max",
+        .data = &schedutil_iowait_boost_max,
+        .maxlen = sizeof(int),
+        .mode = 0644,
+        .proc_handler = gaming_schedutil_iowait_handler,
     },
 #endif
     {
@@ -383,6 +401,40 @@ static int gaming_schedutil_rate_handler(struct ctl_table *table, int write,
     if (write) {
         /* Update schedutil governor tunables at runtime */
         sugov_set_rate_limit_us((unsigned int)schedutil_rate_limit_us);
+    }
+#endif
+    return 0;
+}
+
+static int gaming_schedutil_pl_handler(struct ctl_table *table, int write,
+                                      void __user *buffer, size_t *lenp, loff_t *ppos)
+{
+    int ret;
+
+    ret = proc_dointvec(table, write, buffer, lenp, ppos);
+    if (ret != 0)
+        return ret;
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDUTIL
+    if (write) {
+        sugov_set_pl(schedutil_pl ? true : false);
+    }
+#endif
+    return 0;
+}
+
+static int gaming_schedutil_iowait_handler(struct ctl_table *table, int write,
+                                           void __user *buffer, size_t *lenp, loff_t *ppos)
+{
+    int ret;
+
+    ret = proc_dointvec(table, write, buffer, lenp, ppos);
+    if (ret != 0)
+        return ret;
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDUTIL
+    if (write) {
+        sugov_set_iowait_boost_max((unsigned int)schedutil_iowait_boost_max);
     }
 #endif
     return 0;

@@ -50,6 +50,8 @@ Sysctls (/proc/sys/gaming)
 - uclamp_task            : write "<pid> <bucket>" to assign a bucket to a pid
 - uclamp_by_name         : write "<comm_name> <bucket>" to assign to all tasks with matching comm
 - schedutil_rate_limit_us : schedutil governor rate limit in microseconds (write to change runtime)
+- schedutil_pl : 0/1 enable "pl" (performance lock) in schedutil governor
+- schedutil_iowait_boost_max : set global max for iowait boost (applied to all CPUs)
 
 Quick usage examples
 --------------------
@@ -140,6 +142,34 @@ echo 40000 > /proc/sys/gaming/schedutil_rate_limit_us
 The value is applied immediately to the schedutil governor; you can verify per-policy values under:
 
 /sys/devices/system/cpu/cpufreq/*/schedutil_*  (prints configured value)
+
+Kernel manager integration
+--------------------------
+The kernel exposes a small set of runtime tunables under `/proc/sys/gaming/` which kernel managers and UI tools
+can read and modify to control the `schedutil` governor behaviour and scheduler assist features.
+
+Exposed sysctls
+- `schedutil_rate_limit_us` : integer (microseconds). Controls schedutil's rate limit (default 20000). Write to apply immediately.
+- `schedutil_pl` : integer (0/1). Enable (1) or disable (0) the "pl" (performance lock) flag in the governor.
+- `schedutil_iowait_boost_max` : integer. Sets the global max value used by per-CPU iowait boost logic.
+
+Examples
+- Read current rate limit:
+  cat /proc/sys/gaming/schedutil_rate_limit_us
+- Set rate limit to 40 ms:
+  echo 40000 > /proc/sys/gaming/schedutil_rate_limit_us
+- Enable PL:
+  echo 1 > /proc/sys/gaming/schedutil_pl
+
+UI Recommendations
+- Show units and current values (µs for `schedutil_rate_limit_us`, 0/1 for `schedutil_pl`).
+- Require root to write; validate user input before applying: e.g., `schedutil_rate_limit_us` should be >= 1000 and reasonably bounded (suggest 1_000..1_000_000), `schedutil_pl` must be 0 or 1.
+- After changing values, verify result via `/sys/devices/system/cpu/cpufreq/*/schedutil_*` and present success/failure to the user.
+- Provide presets (Balanced, Performance, Battery Saver) that map to sensible sets of values rather than exposing raw numbers by default.
+
+Notes & Caveats
+- Writes are applied immediately and affect governor behaviour globally; some platforms or drivers may impose additional limits.
+- Keep defaults conservative (20 ms) to avoid excessive frequency switching which increases power and thermal overhead.
 
 Usage
 -----

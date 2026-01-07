@@ -26,9 +26,10 @@ case "$1" in
         fi
 
         # Optional: tune schedutil rate limits (microseconds)
+        # Use 20000us (20ms) default to avoid frequent DVFS churn which can
+        # cause extra power/perf overhead on mobile devices.
         for f in /sys/devices/system/cpu/cpufreq/*/schedutil_* 2>/dev/null; do
-            # set conservative defaults: quick up, moderate down
-            echo 40000 > "$f" 2>/dev/null || true
+            echo 20000 > "$f" 2>/dev/null || true
         done
 
         echo "gaming-mode: enabled"
