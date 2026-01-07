@@ -63,3 +63,38 @@ Caveats
 Author
 ------
 Document added for the `gaming_mode` and `GAMING_UCLAMP` features.
+
+Startup / systemd example
+-------------------------
+This repository includes a small example `systemd` unit and helper script in `Documentation/admin-guide`.
+
+Files provided (examples):
+- `Documentation/admin-guide/gaming-mode.service`  — example `systemd` unit
+- `Documentation/admin-guide/gaming-mode-apply.sh` — small helper script to enable/disable gaming mode
+
+Installation
+------------
+# Copy the example unit and script to suitable locations
+sudo cp Documentation/admin-guide/gaming-mode-apply.sh /usr/local/sbin/
+sudo chmod +x /usr/local/sbin/gaming-mode-apply.sh
+sudo cp Documentation/admin-guide/gaming-mode.service /etc/systemd/system/
+
+# Enable the service so it applies settings at boot
+sudo systemctl daemon-reload
+sudo systemctl enable --now gaming-mode.service
+
+Usage
+-----
+# Enable gaming mode immediately
+sudo /usr/local/sbin/gaming-mode-apply.sh enable
+
+# Disable it
+sudo /usr/local/sbin/gaming-mode-apply.sh disable
+
+# Check status
+sudo /usr/local/sbin/gaming-mode-apply.sh status
+
+Notes
+-----
+- The service will only start if `/proc/sys/gaming/gaming_mode` exists (the kernel must have `CONFIG_GAMING_MODE` enabled and the sysctl registered).
+- The helper script is intentionally small and safe — it respects missing sysctl entries and will not fail the boot sequence if the kernel does not provide the gaming sysctl.
