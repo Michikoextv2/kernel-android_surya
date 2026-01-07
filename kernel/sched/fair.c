@@ -3909,16 +3909,16 @@ static inline void util_est_enqueue(struct cfs_rq *cfs_rq,
 	task_util = _task_util_est(p);
 	effective_util = task_util;
 
-#ifdef CONFIG_GAMING_MODE
+#if defined(CONFIG_GAMING_MODE) && defined(CONFIG_GAMING_UCLAMP)
 	extern int gaming_mode;
 	extern int uclamp_enable;
 	extern int uclamp_assist;
 	extern int uclamp_boost_percent;
 	extern int uclamp_bucket_default;
 	extern int uclamp_bucket0;
-	exern int uclamp_bucket1;
-	exern int uclamp_bucket2;
-	exern int uclamp_bucket3;
+	extern int uclamp_bucket1;
+	extern int uclamp_bucket2;
+	extern int uclamp_bucket3;
 	extern int gaming_get_task_uclamp_bucket(pid_t pid);
 
 	if (gaming_mode && uclamp_enable) {
@@ -3948,7 +3948,7 @@ static inline void util_est_enqueue(struct cfs_rq *cfs_rq,
 				effective_util = boosted;
 		}
 	}
-#endif /* CONFIG_GAMING_MODE */
+#endif /* CONFIG_GAMING_MODE && CONFIG_GAMING_UCLAMP */
 
 	enqueued += effective_util;
 	WRITE_ONCE(cfs_rq->avg.util_est.enqueued, enqueued);

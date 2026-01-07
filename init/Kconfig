@@ -1341,6 +1341,16 @@ config GAMING_MODE
 	 - /proc/sys/gaming/fast_charge_boost to indicate a user request for
 	   increased charging current (drivers may honor this flag).
 
+config GAMING_UCLAMP
+	bool "Gaming: uclamp helper"
+	depends on GAMING_MODE && SYSCTL
+	default y
+	help
+	  Enable the uclamp helper used by gaming mode. This provides per-task
+	  and per-name uclamp mapping plus configurable buckets and boost
+	  percentage via /proc/sys/gaming/*. It is intended to be a low-impact
+	  scheduler assist for latency-sensitive workloads such as games.
+
 config HAVE_UID16
 	bool
 

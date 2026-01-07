@@ -15,6 +15,8 @@ int fast_charge_boost;
 EXPORT_SYMBOL(fast_charge_boost);
 
 int gaming_mode = 1; /* enabled by default */
+
+#ifdef CONFIG_GAMING_UCLAMP
 int uclamp_enable = 1;               /* enable uclamp helper */
 int uclamp_assist = 1;               /* enable per-task assist */
 int uclamp_boost_percent = 20;      /* additional boost applied (percent) */
@@ -112,6 +114,47 @@ static int gaming_uclamp_task_handler(struct ctl_table *table, int write,
 	return 0;
 }
 
+/* uclamp_by_name: write "comm_name bucket" to map all tasks with matching comm */
+static char uclamp_name_buf[64];
+static int gaming_set_uclamp_by_name(const char *name, int bucket)
+{
+	struct task_struct *p;
+	int count = 0;
+
+	for_each_process(p) {
+		if (strncmp(p->comm, name, TASK_COMM_LEN) == 0) {
+			gaming_set_task_uclamp(p->pid, bucket);
+			count++;
+		}
+	}
+	return count;
+}
+
+static int gaming_uclamp_name_handler(struct ctl_table *table, int write,
+				 void __user *buffer, size_t *lenp, loff_t *ppos)
+{
+	int ret;
+	ret = proc_dostring(table, write, buffer, lenp, ppos);
+	if (ret != 0)
+		return ret;
+
+	if (write && uclamp_assist && uclamp_name_buf[0]) {
+		char name[TASK_COMM_LEN];
+		int bucket;
+		if (sscanf(uclamp_name_buf, "%31s %d", name, &bucket) >= 1) {
+			if (bucket >= 0) {
+				int n = gaming_set_uclamp_by_name(name, bucket);
+				pr_info("gaming_mode: set uclamp for name %s -> bucket %d (%d tasks)\n", name, bucket, n);
+			}
+		}
+	}
+	return 0;
+}
+#else
+/* CONFIG_GAMING_UCLAMP not set: provide a fast stub so scheduler code compiles */
+static inline int gaming_get_task_uclamp_bucket(pid_t pid) { return 0; }
+#endif
+
 static int old_tcp_slow_start_after_idle;
 static unsigned int old_sched_latency;
 static unsigned int old_normalized_sched_latency;
@@ -177,6 +220,7 @@ static struct ctl_table gaming_table[] = {
         .mode = 0644,
         .proc_handler = proc_dointvec,
     },
+#ifdef CONFIG_GAMING_UCLAMP
     {
         .procname = "uclamp_enable",
         .data = &uclamp_enable,
@@ -213,6 +257,13 @@ static struct ctl_table gaming_table[] = {
         .proc_handler = gaming_uclamp_task_handler,
     },
     {
+        .procname = "uclamp_by_name",
+        .data = uclamp_name_buf,
+        .maxlen = sizeof(uclamp_name_buf),
+        .mode = 0644,
+        .proc_handler = gaming_uclamp_name_handler,
+    },
+    {
         .procname = "uclamp_bucket0",
         .data = &uclamp_bucket0,
         .maxlen = sizeof(int),
@@ -240,6 +291,7 @@ static struct ctl_table gaming_table[] = {
         .mode = 0644,
         .proc_handler = proc_dointvec,
     },
+#endif
     { }
 };
 
