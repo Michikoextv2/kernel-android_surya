@@ -1330,6 +1330,17 @@ config LD_DEAD_CODE_DATA_ELIMINATION
 config SYSCTL
 	bool
 
+config GAMING_MODE
+	bool "Gaming mode tweaks (low impact)"
+	depends on SYSCTL
+	default y
+	---help---
+	Enable a small built-in feature that provides:
+	 - /proc/sys/gaming/gaming_mode to toggle a set of latency-friendly
+	   kernel tunables (sched and TCP slow-start) to favor low ping for games.
+	 - /proc/sys/gaming/fast_charge_boost to indicate a user request for
+	   increased charging current (drivers may honor this flag).
+
 config HAVE_UID16
 	bool
 
