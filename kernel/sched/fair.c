@@ -3912,23 +3912,34 @@ static inline void util_est_enqueue(struct cfs_rq *cfs_rq,
 #ifdef CONFIG_GAMING_MODE
 	extern int gaming_mode;
 	extern int uclamp_enable;
+	extern int uclamp_assist;
 	extern int uclamp_boost_percent;
 	extern int uclamp_bucket_default;
 	extern int uclamp_bucket0;
-	extern int uclamp_bucket1;
-	extern int uclamp_bucket2;
-	extern int uclamp_bucket3;
+	exern int uclamp_bucket1;
+	exern int uclamp_bucket2;
+	exern int uclamp_bucket3;
+	extern int gaming_get_task_uclamp_bucket(pid_t pid);
 
 	if (gaming_mode && uclamp_enable) {
 		unsigned int bucket_val = 0;
-		switch (uclamp_bucket_default) {
-		case 1: bucket_val = uclamp_bucket1; break;
-		case 2: bucket_val = uclamp_bucket2; break;
-		case 3: bucket_val = uclamp_bucket3; break;
-		case 0:
-		default:
-			bucket_val = uclamp_bucket0;
-			break;
+		/* per-task mapping takes precedence when assist is enabled */
+		if (uclamp_assist) {
+			int tb = gaming_get_task_uclamp_bucket(p->pid);
+			if (tb > 0)
+				bucket_val = tb;
+		}
+
+		if (!bucket_val) {
+			switch (uclamp_bucket_default) {
+			case 1: bucket_val = uclamp_bucket1; break;
+			case 2: bucket_val = uclamp_bucket2; break;
+			case 3: bucket_val = uclamp_bucket3; break;
+			case 0:
+			default:
+				bucket_val = uclamp_bucket0;
+				break;
+			}
 		}
 
 		if (bucket_val) {
