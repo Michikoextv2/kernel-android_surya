@@ -5,6 +5,7 @@
 #include <linux/init.h>
 #include <net/tcp.h>
 #include <linux/sched/sysctl.h>
+#include <linux/sched/signal.h>
 #include <net/sock.h>
 
 /* normalized_sysctl_sched_latency is defined in kernel/sched/fair.c */
@@ -187,7 +188,7 @@ static int gaming_uclamp_name_handler(struct ctl_table *table, int write,
 	if (write && uclamp_assist && uclamp_name_buf[0]) {
 		char name[TASK_COMM_LEN];
 		int bucket;
-		if (sscanf(uclamp_name_buf, "%31s %d", name, &bucket) >= 1) {
+		if (sscanf(uclamp_name_buf, "%15s %d", name, &bucket) >= 1) {
 			if (bucket >= 0) {
 				int n = gaming_set_uclamp_by_name(name, bucket);
 				pr_info("gaming_mode: set uclamp for name %s -> bucket %d (%d tasks)\n", name, bucket, n);
