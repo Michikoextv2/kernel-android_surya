@@ -12,8 +12,26 @@ Kconfig
 - CONFIG_GAMING_UCLAMP
   - Adds the uclamp helper (per-task and per-name uclamp mapping, configurable buckets and boost percent).
 
-Both options are small and intended to be safe to enable on embedded devices. In this tree `CONFIG_GAMING_MODE` and `CONFIG_GAMING_UCLAMP` are enabled in `arch/arm64/configs/surya_defconfig`.
+Sub-options for `CONFIG_GAMING_UCLAMP` (appear in menuconfig under "Gaming: uclamp helper"):
+- CONFIG_GAMING_UCLAMP_ENABLE (bool)
+  - Enable the uclamp helper by default at boot.
+- CONFIG_GAMING_UCLAMP_ASSIST (bool)
+  - Enable per-task/name assist logic by default.
+- CONFIG_GAMING_UCLAMP_BOOST_PERCENT (int)
+  - Default percent boost applied to selected buckets.
+- CONFIG_GAMING_UCLAMP_BUCKET_DEFAULT (int)
+  - Default bucket index to apply when no per-task mapping exists.
+- CONFIG_GAMING_UCLAMP_BUCKET0..3 (int)
+  - The four bucket values (range 0..1024) used by the helper.
+- CONFIG_GAMING_UCLAMP_TASK_MAPPING (bool)
+  - Expose `/proc/sys/gaming/uclamp_task` for per-pid mapping.
+- CONFIG_GAMING_UCLAMP_BY_NAME (bool)
+  - Expose `/proc/sys/gaming/uclamp_by_name` for comm-name mapping.
 
+Both options are small and intended to be safe to enable on embedded devices. In this tree `CONFIG_GAMING_MODE` and `CONFIG_GAMING_UCLAMP` are enabled in `arch/arm64/configs/surya_defconfig` and the sub-options are set to reasonable defaults.
+
+Tip: Run `make menuconfig` and navigate to:
+  General setup -> Gaming mode tweaks (or search for GAMING_UCLAMP) to change these options.
 Files
 -----
 - kernel/gaming_mode.c  — sysctl handlers and uclamp mapping implementation

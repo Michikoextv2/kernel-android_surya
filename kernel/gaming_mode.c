@@ -17,15 +17,56 @@ EXPORT_SYMBOL(fast_charge_boost);
 int gaming_mode = 1; /* enabled by default */
 
 #ifdef CONFIG_GAMING_UCLAMP
+/* Defaults from Kconfig when available, fall back to safe constants */
+#ifdef CONFIG_GAMING_UCLAMP_ENABLE
 int uclamp_enable = 1;               /* enable uclamp helper */
-int uclamp_assist = 1;               /* enable per-task assist */
-int uclamp_boost_percent = 20;      /* additional boost applied (percent) */
-int uclamp_bucket_default = 0;      /* default bucket index (0 = disabled) */
-int uclamp_bucket0 = 0;             /* bucket values scaled 0..1024 */
-int uclamp_bucket1 = 128;
-int uclamp_bucket2 = 256;
-int uclamp_bucket3 = 512;
+#else
+int uclamp_enable = 0;
+#endif
 
+#ifdef CONFIG_GAMING_UCLAMP_ASSIST
+int uclamp_assist = 1;               /* enable per-task assist */
+#else
+int uclamp_assist = 0;
+#endif
+
+#ifdef CONFIG_GAMING_UCLAMP_BOOST_PERCENT
+int uclamp_boost_percent = CONFIG_GAMING_UCLAMP_BOOST_PERCENT;      /* additional boost applied (percent) */
+#else
+int uclamp_boost_percent = 20;
+#endif
+
+#ifdef CONFIG_GAMING_UCLAMP_BUCKET_DEFAULT
+int uclamp_bucket_default = CONFIG_GAMING_UCLAMP_BUCKET_DEFAULT;      /* default bucket index (0 = disabled) */
+#else
+int uclamp_bucket_default = 0;
+#endif
+
+#ifdef CONFIG_GAMING_UCLAMP_BUCKET0
+int uclamp_bucket0 = CONFIG_GAMING_UCLAMP_BUCKET0;             /* bucket values scaled 0..1024 */
+#else
+int uclamp_bucket0 = 0;
+#endif
+
+#ifdef CONFIG_GAMING_UCLAMP_BUCKET1
+int uclamp_bucket1 = CONFIG_GAMING_UCLAMP_BUCKET1;
+#else
+int uclamp_bucket1 = 128;
+#endif
+
+#ifdef CONFIG_GAMING_UCLAMP_BUCKET2
+int uclamp_bucket2 = CONFIG_GAMING_UCLAMP_BUCKET2;
+#else
+int uclamp_bucket2 = 256;
+#endif
+
+#ifdef CONFIG_GAMING_UCLAMP_BUCKET3
+int uclamp_bucket3 = CONFIG_GAMING_UCLAMP_BUCKET3;
+#else
+int uclamp_bucket3 = 512;
+#endif
+
+#ifdef CONFIG_GAMING_UCLAMP_TASK_MAPPING
 /* per-task uclamp mapping: write "<pid> <bucket>" to /proc/sys/gaming/uclamp_task
  * bucket 0 removes the mapping for the pid
  */
@@ -113,7 +154,12 @@ static int gaming_uclamp_task_handler(struct ctl_table *table, int write,
 	}
 	return 0;
 }
+#else
+/* per-pid mapping disabled: provide a stub used in scheduler and nothing else */
+static inline int gaming_get_task_uclamp_bucket(pid_t pid) { return 0; }
+#endif /* CONFIG_GAMING_UCLAMP_TASK_MAPPING */
 
+#ifdef CONFIG_GAMING_UCLAMP_BY_NAME
 /* uclamp_by_name: write "comm_name bucket" to map all tasks with matching comm */
 static char uclamp_name_buf[64];
 static int gaming_set_uclamp_by_name(const char *name, int bucket)
@@ -151,9 +197,10 @@ static int gaming_uclamp_name_handler(struct ctl_table *table, int write,
 	return 0;
 }
 #else
-/* CONFIG_GAMING_UCLAMP not set: provide a fast stub so scheduler code compiles */
-static inline int gaming_get_task_uclamp_bucket(pid_t pid) { return 0; }
-#endif
+/* by-name mapping disabled: provide a no-op handler */
+static inline int gaming_set_uclamp_by_name(const char *name, int bucket) { return 0; }
+#endif /* CONFIG_GAMING_UCLAMP_BY_NAME */
+#endif /* CONFIG_GAMING_UCLAMP */
 
 static int old_tcp_slow_start_after_idle;
 static unsigned int old_sched_latency;
@@ -249,6 +296,7 @@ static struct ctl_table gaming_table[] = {
         .mode = 0644,
         .proc_handler = proc_dointvec,
     },
+#ifdef CONFIG_GAMING_UCLAMP_TASK_MAPPING
     {
         .procname = "uclamp_task",
         .data = uclamp_task_buf,
@@ -256,6 +304,8 @@ static struct ctl_table gaming_table[] = {
         .mode = 0644,
         .proc_handler = gaming_uclamp_task_handler,
     },
+#endif
+#ifdef CONFIG_GAMING_UCLAMP_BY_NAME
     {
         .procname = "uclamp_by_name",
         .data = uclamp_name_buf,
@@ -263,6 +313,7 @@ static struct ctl_table gaming_table[] = {
         .mode = 0644,
         .proc_handler = gaming_uclamp_name_handler,
     },
+#endif
     {
         .procname = "uclamp_bucket0",
         .data = &uclamp_bucket0,
