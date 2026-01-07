@@ -3896,13 +3896,50 @@ static inline void util_est_enqueue(struct cfs_rq *cfs_rq,
 				    struct task_struct *p)
 {
 	unsigned int enqueued;
+	unsigned int task_util;
+	unsigned int effective_util;
 
 	if (!sched_feat(UTIL_EST))
 		return;
 
 	/* Update root cfs_rq's estimated utilization */
 	enqueued  = cfs_rq->avg.util_est.enqueued;
-	enqueued += _task_util_est(p);
+
+	/* base task util estimate */
+	task_util = _task_util_est(p);
+	effective_util = task_util;
+
+#ifdef CONFIG_GAMING_MODE
+	extern int gaming_mode;
+	extern int uclamp_enable;
+	extern int uclamp_boost_percent;
+	extern int uclamp_bucket_default;
+	extern int uclamp_bucket0;
+	extern int uclamp_bucket1;
+	extern int uclamp_bucket2;
+	extern int uclamp_bucket3;
+
+	if (gaming_mode && uclamp_enable) {
+		unsigned int bucket_val = 0;
+		switch (uclamp_bucket_default) {
+		case 1: bucket_val = uclamp_bucket1; break;
+		case 2: bucket_val = uclamp_bucket2; break;
+		case 3: bucket_val = uclamp_bucket3; break;
+		case 0:
+		default:
+			bucket_val = uclamp_bucket0;
+			break;
+		}
+
+		if (bucket_val) {
+			unsigned int boosted = (bucket_val * (100U + (unsigned int)uclamp_boost_percent)) / 100U;
+			if (boosted > effective_util)
+				effective_util = boosted;
+		}
+	}
+#endif /* CONFIG_GAMING_MODE */
+
+	enqueued += effective_util;
 	WRITE_ONCE(cfs_rq->avg.util_est.enqueued, enqueued);
 
 	trace_sched_util_est_task(p, &p->se.avg);

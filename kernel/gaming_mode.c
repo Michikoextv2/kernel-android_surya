@@ -14,7 +14,14 @@ extern unsigned int normalized_sysctl_sched_latency;
 int fast_charge_boost;
 EXPORT_SYMBOL(fast_charge_boost);
 
-static int gaming_mode;
+int gaming_mode;
+int uclamp_enable = 1;               /* enable uclamp helper */
+int uclamp_boost_percent = 20;      /* additional boost applied (percent) */
+int uclamp_bucket_default = 0;      /* default bucket index (0 = disabled) */
+int uclamp_bucket0 = 0;             /* bucket values scaled 0..1024 */
+int uclamp_bucket1 = 128;
+int uclamp_bucket2 = 256;
+int uclamp_bucket3 = 512;
 static int old_tcp_slow_start_after_idle;
 static unsigned int old_sched_latency;
 static unsigned int old_normalized_sched_latency;
@@ -76,6 +83,55 @@ static struct ctl_table gaming_table[] = {
     {
         .procname = "fast_charge_boost",
         .data = &fast_charge_boost,
+        .maxlen = sizeof(int),
+        .mode = 0644,
+        .proc_handler = proc_dointvec,
+    },
+    {
+        .procname = "uclamp_enable",
+        .data = &uclamp_enable,
+        .maxlen = sizeof(int),
+        .mode = 0644,
+        .proc_handler = proc_dointvec,
+    },
+    {
+        .procname = "uclamp_boost_percent",
+        .data = &uclamp_boost_percent,
+        .maxlen = sizeof(int),
+        .mode = 0644,
+        .proc_handler = proc_dointvec,
+    },
+    {
+        .procname = "uclamp_bucket_default",
+        .data = &uclamp_bucket_default,
+        .maxlen = sizeof(int),
+        .mode = 0644,
+        .proc_handler = proc_dointvec,
+    },
+    {
+        .procname = "uclamp_bucket0",
+        .data = &uclamp_bucket0,
+        .maxlen = sizeof(int),
+        .mode = 0644,
+        .proc_handler = proc_dointvec,
+    },
+    {
+        .procname = "uclamp_bucket1",
+        .data = &uclamp_bucket1,
+        .maxlen = sizeof(int),
+        .mode = 0644,
+        .proc_handler = proc_dointvec,
+    },
+    {
+        .procname = "uclamp_bucket2",
+        .data = &uclamp_bucket2,
+        .maxlen = sizeof(int),
+        .mode = 0644,
+        .proc_handler = proc_dointvec,
+    },
+    {
+        .procname = "uclamp_bucket3",
+        .data = &uclamp_bucket3,
         .maxlen = sizeof(int),
         .mode = 0644,
         .proc_handler = proc_dointvec,
