@@ -101,6 +101,15 @@ sudo cp Documentation/admin-guide/gaming-mode.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now gaming-mode.service
 
+Notes about performance defaults
+-------------------------------
+The `surya_defconfig` has been adjusted to favour a good balance between performance and battery life for mobile devices:
+- Default CPU governor changed to **schedutil** (adaptive, energy-aware) instead of the always-on `performance` governor.
+- Multi-queue I/O schedulers **mq-deadline** and **kyber** are enabled and the default I/O scheduler is set to **mq-deadline** (better latency/battery tradeoff for UFS/NVMe storage).
+
+These defaults aim to give responsive performance during gaming while still allowing the system to conserve energy under light load.
+
+The included helper script `gaming-mode-apply.sh` will try to set the CPU governor to `schedutil` and apply conservative `schedutil` rate-limits (quick up, moderate down) when `gaming_mode` is enabled. This provides a good balance between responsiveness and battery life without requiring manual tuning.
 Usage
 -----
 # Enable gaming mode immediately

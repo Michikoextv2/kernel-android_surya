@@ -14,6 +14,23 @@ case "$1" in
         # enable uclamp helpers if present
         [ -f $SYS/uclamp_enable ] && echo 1 > $SYS/uclamp_enable || true
         [ -f $SYS/uclamp_assist ] && echo 1 > $SYS/uclamp_assist || true
+
+        # Prefer schedutil governor for balanced performance/energy
+        if command -v cpufreq-info >/dev/null 2>&1; then
+            for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
+                g=$cpu/cpufreq/scaling_governor
+                if [ -f "$g" ]; then
+                    echo schedutil > "$g" || true
+                fi
+            done
+        fi
+
+        # Optional: tune schedutil rate limits (microseconds)
+        for f in /sys/devices/system/cpu/cpufreq/*/schedutil_* 2>/dev/null; do
+            # set conservative defaults: quick up, moderate down
+            echo 40000 > "$f" 2>/dev/null || true
+        done
+
         echo "gaming-mode: enabled"
         ;;
     disable)
