@@ -32,9 +32,19 @@ case "$1" in
         done
 
         echo "gaming-mode: enabled"
+
+        # When gaming mode is enabled we prioritize responsiveness: disable deep-sleep helper
+        if command -v /usr/local/sbin/deepsleep-apply.sh >/dev/null 2>&1; then
+            /usr/local/sbin/deepsleep-apply.sh disable || true
+        fi
         ;;
     disable)
         echo 0 > $SYS/gaming_mode || true
+
+        # When gaming mode is disabled, re-enable deeper sleep policies
+        if command -v /usr/local/sbin/deepsleep-apply.sh >/dev/null 2>&1; then
+            /usr/local/sbin/deepsleep-apply.sh enable || true
+        fi
         echo "gaming-mode: disabled"
         ;;
     status)

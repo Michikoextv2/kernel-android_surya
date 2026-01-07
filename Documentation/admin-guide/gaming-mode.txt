@@ -101,6 +101,21 @@ sudo cp Documentation/admin-guide/gaming-mode.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now gaming-mode.service
 
+Auto deep-sleep on screen-off
+----------------------------
+To automatically apply deep-sleep friendly settings when the screen is turned off, you can install the
+`screen-deepsleep-handler.sh` script and `deepsleep-screen-handler.service`. The handler polls the display
+brightness; when the brightness is at or below a configured threshold, it runs `deepsleep-apply.sh enable`,
+and when the display returns it runs `deepsleep-apply.sh disable`. Install and enable:
+
+sudo cp Documentation/admin-guide/screen-deepsleep-handler.sh /usr/local/sbin/
+sudo chmod +x /usr/local/sbin/screen-deepsleep-handler.sh
+sudo cp Documentation/admin-guide/deepsleep-screen-handler.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now deepsleep-screen-handler.service
+
+Note: On Android or non-systemd systems, use platform-specific hooks (power manager events). Configure
+`BRIGHTNESS_PATH`, `POLL_INTERVAL`, and `OFF_THRESHOLD` via environment variables for different hardware.
 Notes about performance defaults
 -------------------------------
 The `surya_defconfig` has been adjusted to favour a good balance between performance and battery life for mobile devices:
