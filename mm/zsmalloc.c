@@ -556,8 +556,6 @@ static int get_size_class_index(int size)
 }
 
 /* type can be of enum type class_stat_type or fullness_group */
-/* type can be of enum type class_stat_type or fullness_group */
-#ifdef CONFIG_ZSMALLOC_STAT
 static inline void class_stat_inc(struct size_class *class,
 				int type, unsigned long cnt)
 {
@@ -577,25 +575,6 @@ static inline unsigned long zs_stat_get(struct size_class *class,
 {
 	return class->stats.objs[type];
 }
-#else
-static inline void class_stat_inc(struct size_class *class,
-				int type, unsigned long cnt)
-{
-}
-
-/* type can be of enum type class_stat_type or fullness_group */
-static inline void class_stat_dec(struct size_class *class,
-				int type, unsigned long cnt)
-{
-}
-
-/* type can be of enum type class_stat_type or fullness_group */
-static inline unsigned long zs_stat_get(struct size_class *class,
-				int type)
-{
-	return 0UL;
-}
-#endif
 
 #ifdef CONFIG_ZSMALLOC_STAT
 

@@ -179,8 +179,7 @@ submit_bio_retry:
 			vsrc = kmap_atomic(ipage);
 			vto = kmap_atomic(page);
 			memcpy(vto, vsrc + blkoff, map.m_plen);
-			if (map.m_plen < PAGE_SIZE)
-				memset(vto + map.m_plen, 0, PAGE_SIZE - map.m_plen);
+			memset(vto + map.m_plen, 0, PAGE_SIZE - map.m_plen);
 			kunmap_atomic(vto);
 			kunmap_atomic(vsrc);
 			flush_dcache_page(page);
