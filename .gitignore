@@ -38,7 +38,6 @@
 *.su
 *.symtypes
 *.tar
-*.img
 *.xz
 Module.symvers
 modules.builtin
