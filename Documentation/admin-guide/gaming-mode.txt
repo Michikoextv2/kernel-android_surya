@@ -1,0 +1,198 @@
+Gaming Mode and uclamp helper
+================================
+
+Overview
+--------
+Gaming mode is a small, low-impact kernel feature that helps favour low-latency behaviour for interactive/real-time workloads (e.g., games) by exposing a few sysctls and optional uclamp helpers.
+
+Kconfig
+-------
+- CONFIG_GAMING_MODE
+  - Enables the core gaming-mode sysctls (under /proc/sys/gaming).
+- CONFIG_GAMING_UCLAMP
+  - Adds the uclamp helper (per-task and per-name uclamp mapping, configurable buckets and boost percent).
+
+Sub-options for `CONFIG_GAMING_UCLAMP` (appear in menuconfig under "Gaming: uclamp helper"):
+- CONFIG_GAMING_UCLAMP_ENABLE (bool)
+  - Enable the uclamp helper by default at boot.
+- CONFIG_GAMING_UCLAMP_ASSIST (bool)
+  - Enable per-task/name assist logic by default.
+- CONFIG_GAMING_UCLAMP_BOOST_PERCENT (int)
+  - Default percent boost applied to selected buckets.
+- CONFIG_GAMING_UCLAMP_BUCKET_DEFAULT (int)
+  - Default bucket index to apply when no per-task mapping exists.
+- CONFIG_GAMING_UCLAMP_BUCKET0..3 (int)
+  - The four bucket values (range 0..1024) used by the helper.
+- CONFIG_GAMING_UCLAMP_TASK_MAPPING (bool)
+  - Expose `/proc/sys/gaming/uclamp_task` for per-pid mapping.
+- CONFIG_GAMING_UCLAMP_BY_NAME (bool)
+  - Expose `/proc/sys/gaming/uclamp_by_name` for comm-name mapping.
+
+Both options are small and intended to be safe to enable on embedded devices. In this tree `CONFIG_GAMING_MODE` and `CONFIG_GAMING_UCLAMP` are enabled in `arch/arm64/configs/surya_defconfig` and the sub-options are set to reasonable defaults.
+
+Tip: Run `make menuconfig` and navigate to:
+  General setup -> Gaming mode tweaks (or search for GAMING_UCLAMP) to change these options.
+Files
+-----
+- kernel/gaming_mode.c  — sysctl handlers and uclamp mapping implementation
+- kernel/sched/fair.c   — scheduler hooks consult uclamp values when enabled
+- init/Kconfig          — Kconfig entries for GAMING_MODE and GAMING_UCLAMP
+
+Sysctls (/proc/sys/gaming)
+--------------------------
+- gaming_mode            : 0/1 (toggle gaming mode behaviour)
+- fast_charge_boost      : integer (driver may read this variable to boost charging)
+- uclamp_enable          : 0/1 (enable uclamp helper)
+- uclamp_assist          : 0/1 (enable per-task/name assist mapping)
+- uclamp_boost_percent   : integer percent applied when bucket > 0
+- uclamp_bucket_default  : 0..3 select the default bucket
+- uclamp_bucket0..uclamp_bucket3 : bucket raw values (0..1024)
+- uclamp_task            : write "<pid> <bucket>" to assign a bucket to a pid
+- uclamp_by_name         : write "<comm_name> <bucket>" to assign to all tasks with matching comm
+- schedutil_rate_limit_us : schedutil governor rate limit in microseconds (write to change runtime)
+- schedutil_pl : 0/1 enable "pl" (performance lock) in schedutil governor
+- schedutil_iowait_boost_max : set global max for iowait boost (applied to all CPUs)
+
+Quick usage examples
+--------------------
+# Enable/disable gaming mode
+$ echo 1 > /proc/sys/gaming/gaming_mode
+$ echo 0 > /proc/sys/gaming/gaming_mode
+
+# Set bucket for an executable name (e.g., game binary 'com.example.game')
+$ echo "com.example.game 3" > /proc/sys/gaming/uclamp_by_name
+
+# Assign bucket to a specific pid
+$ echo "12345 2" > /proc/sys/gaming/uclamp_task
+
+# Adjust default bucket and boost
+$ echo 2 > /proc/sys/gaming/uclamp_bucket_default
+$ echo 30 > /proc/sys/gaming/uclamp_boost_percent
+
+Notes & testing
+---------------
+- The uclamp helper is optional and protected by `CONFIG_GAMING_UCLAMP`.
+- If `CONFIG_GAMING_UCLAMP` is not set, scheduler code will ignore uclamp mappings.
+- To verify, check that `/proc/sys/gaming/` contains the expected entries.
+- For runtime testing, use tools like `top`, `htop`, `perf`, and network-testing (ping/iperf) to compare latency under different settings.
+
+Caveats
+-------
+- These settings are meant to be low-impact and reversible; use caution when tuning buckets and boost amounts.
+- `fast_charge_boost` is only an indicator variable — charger/fuel-gauge drivers must explicitly read and honor it.
+
+Author
+------
+Document added for the `gaming_mode` and `GAMING_UCLAMP` features.
+
+Startup / systemd example
+-------------------------
+This repository includes a small example `systemd` unit and helper script in `Documentation/admin-guide`.
+
+Files provided (examples):
+- `Documentation/admin-guide/gaming-mode.service`  — example `systemd` unit
+- `Documentation/admin-guide/gaming-mode-apply.sh` — small helper script to enable/disable gaming mode
+
+Installation
+------------
+# Copy the example unit and script to suitable locations
+sudo cp Documentation/admin-guide/gaming-mode-apply.sh /usr/local/sbin/
+sudo chmod +x /usr/local/sbin/gaming-mode-apply.sh
+sudo cp Documentation/admin-guide/gaming-mode.service /etc/systemd/system/
+
+# Enable the service so it applies settings at boot
+sudo systemctl daemon-reload
+sudo systemctl enable --now gaming-mode.service
+
+Auto deep-sleep on screen-off
+----------------------------
+To automatically apply deep-sleep friendly settings when the screen is turned off, you can install the
+`screen-deepsleep-handler.sh` script and `deepsleep-screen-handler.service`. The handler polls the display
+brightness; when the brightness is at or below a configured threshold, it runs `deepsleep-apply.sh enable`,
+and when the display returns it runs `deepsleep-apply.sh disable`. Install and enable:
+
+sudo cp Documentation/admin-guide/screen-deepsleep-handler.sh /usr/local/sbin/
+sudo chmod +x /usr/local/sbin/screen-deepsleep-handler.sh
+sudo cp Documentation/admin-guide/deepsleep-screen-handler.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now deepsleep-screen-handler.service
+
+Note: On Android or non-systemd systems, use platform-specific hooks (power manager events). Configure
+`BRIGHTNESS_PATH`, `POLL_INTERVAL`, and `OFF_THRESHOLD` via environment variables for different hardware.
+Notes about performance defaults
+-------------------------------
+The `surya_defconfig` has been adjusted to favour a good balance between performance and battery life for mobile devices:
+- Default CPU governor changed to **schedutil** (adaptive, energy-aware) instead of the always-on `performance` governor.
+- Multi-queue I/O schedulers **mq-deadline** and **kyber** are enabled and the default I/O scheduler is set to **mq-deadline** (better latency/battery tradeoff for UFS/NVMe storage).
+
+These defaults aim to give responsive performance during gaming while still allowing the system to conserve energy under light load.
+
+Multitasking tuning
+-------------------
+To improve responsiveness across typical multitasking workloads we applied a few conservative scheduler changes in the default configuration:
+- PELT half-life default: **10 ms** (CONFIG_PELT_UTIL_HALFLIFE_10). This provides faster ramp-up for short interactive bursts compared with longer half-lives.
+- Scheduler latency defaults: **sysctl_sched_latency = 5 ms**, **normalized = 3 ms** (previously 6 ms / 4 ms). Min-granularity defaults were adjusted proportionally (**0.5 ms / ~0.333 ms**).
+
+These are intentionally small, reversible changes to improve interactivity without significantly impacting battery life. If you need to tune further, use the provided runtime sysctls or the per-policy values under `/sys/devices/system/cpu/` to measure and iterate.
+
+
+
+The included helper script `gaming-mode-apply.sh` will try to set the CPU governor to `schedutil` and apply conservative `schedutil` rate-limits when `gaming_mode` is enabled. To reduce DVFS churn and avoid frequent micro-throttling overhead, the default schedutil rate limit is set to **20 ms (20000 µs)**. This reduces power/perf overhead from very frequent frequency switches while still keeping the system responsive.
+
+Runtime tuning
+--------------
+You can tune `schedutil` rate limits at runtime via the new sysctl (requires `CONFIG_CPU_FREQ_GOV_SCHEDUTIL` enabled):
+
+# check current value
+cat /proc/sys/gaming/schedutil_rate_limit_us
+
+# set to 40ms
+echo 40000 > /proc/sys/gaming/schedutil_rate_limit_us
+
+The value is applied immediately to the schedutil governor; you can verify per-policy values under:
+
+/sys/devices/system/cpu/cpufreq/*/schedutil_*  (prints configured value)
+
+Kernel manager integration
+--------------------------
+The kernel exposes a small set of runtime tunables under `/proc/sys/gaming/` which kernel managers and UI tools
+can read and modify to control the `schedutil` governor behaviour and scheduler assist features.
+
+Exposed sysctls
+- `schedutil_rate_limit_us` : integer (microseconds). Controls schedutil's rate limit (default 20000). Write to apply immediately.
+- `schedutil_pl` : integer (0/1). Enable (1) or disable (0) the "pl" (performance lock) flag in the governor.
+- `schedutil_iowait_boost_max` : integer. Sets the global max value used by per-CPU iowait boost logic.
+
+Examples
+- Read current rate limit:
+  cat /proc/sys/gaming/schedutil_rate_limit_us
+- Set rate limit to 40 ms:
+  echo 40000 > /proc/sys/gaming/schedutil_rate_limit_us
+- Enable PL:
+  echo 1 > /proc/sys/gaming/schedutil_pl
+
+UI Recommendations
+- Show units and current values (µs for `schedutil_rate_limit_us`, 0/1 for `schedutil_pl`).
+- Require root to write; validate user input before applying: e.g., `schedutil_rate_limit_us` should be >= 1000 and reasonably bounded (suggest 1_000..1_000_000), `schedutil_pl` must be 0 or 1.
+- After changing values, verify result via `/sys/devices/system/cpu/cpufreq/*/schedutil_*` and present success/failure to the user.
+- Provide presets (Balanced, Performance, Battery Saver) that map to sensible sets of values rather than exposing raw numbers by default.
+
+Notes & Caveats
+- Writes are applied immediately and affect governor behaviour globally; some platforms or drivers may impose additional limits.
+- Keep defaults conservative (20 ms) to avoid excessive frequency switching which increases power and thermal overhead.
+
+Usage
+-----
+# Enable gaming mode immediately
+sudo /usr/local/sbin/gaming-mode-apply.sh enable
+
+# Disable it
+sudo /usr/local/sbin/gaming-mode-apply.sh disable
+
+# Check status
+sudo /usr/local/sbin/gaming-mode-apply.sh status
+
+Notes
+-----
+- The service will only start if `/proc/sys/gaming/gaming_mode` exists (the kernel must have `CONFIG_GAMING_MODE` enabled and the sysctl registered).
+- The helper script is intentionally small and safe — it respects missing sysctl entries and will not fail the boot sequence if the kernel does not provide the gaming sysctl.

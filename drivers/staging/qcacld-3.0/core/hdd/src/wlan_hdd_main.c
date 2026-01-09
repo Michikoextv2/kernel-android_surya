@@ -3785,7 +3785,11 @@ int hdd_wlan_start_modules(struct hdd_context *hdd_ctx, bool reinit)
 			goto close;
 		}
 		/* Set IRQ affinity for WLAN DP and CE IRQS */
+#if defined(HIF_CPU_PERF_AFFINE_MASK) && !defined(CONFIG_IRQ_SBALANCE)
 		hif_config_irq_set_perf_affinity_hint(hif_ctx);
+#else
+		hdd_info("Skipping IRQ affinity setup (SBalance enabled or HIF_CPU_PERF_AFFINE_MASK disabled)");
+#endif
 
 		ret = hdd_register_cb(hdd_ctx);
 		if (ret) {

@@ -19,9 +19,9 @@
 #define VIOS_READ_SCALE (1)
 #define VIOS_WRITE_SCALE (1)
 #define VIOS_SYNC_SCALE (2)
-#define VIOS_ASYNC_SCALE (5)
+#define VIOS_ASYNC_SCALE (3)
 
-#define VIOS_PRIO_SCALE (5)
+#define VIOS_PRIO_SCALE (10)
 
 struct fiops_rb_root {
 	struct rb_root rb;
@@ -46,6 +46,7 @@ struct fiops_data {
 
 	unsigned int busy_queues;
 	unsigned int in_flight[2];
+	unsigned int max_in_flight;
 
 	struct work_struct unplug_work;
 
@@ -436,6 +437,10 @@ static int fiops_dispatch_requests(struct request_queue *q, int force)
 	if (unlikely(force))
 		return fiops_forced_dispatch(fiopsd);
 
+	/* Limit dispatching when already hit max in-flight to reduce power/IO bursts */
+	if (fiopsd->in_flight[0] + fiopsd->in_flight[1] >= fiopsd->max_in_flight)
+		return 0;
+
 	ioc = fiops_select_ioc(fiopsd);
 	if (!ioc)
 		return 0;
@@ -649,6 +654,8 @@ static int fiops_init_queue(struct request_queue *q, struct elevator_type *e)
 	fiopsd->write_scale = VIOS_WRITE_SCALE;
 	fiopsd->sync_scale = VIOS_SYNC_SCALE;
 	fiopsd->async_scale = VIOS_ASYNC_SCALE;
+	/* Safety limit for concurrent in-flight requests to reduce power spikes */
+	fiopsd->max_in_flight = 16;
 
 	return 0;
 }
@@ -715,6 +722,27 @@ STORE_FUNCTION(fiops_read_scale_store, &fiopsd->read_scale, 1, 100);
 STORE_FUNCTION(fiops_write_scale_store, &fiopsd->write_scale, 1, 100);
 STORE_FUNCTION(fiops_sync_scale_store, &fiopsd->sync_scale, 1, 100);
 STORE_FUNCTION(fiops_async_scale_store, &fiopsd->async_scale, 1, 100);
+
+static ssize_t
+fiops_max_in_flight_store(struct elevator_queue *e, const char *page, size_t count)
+{
+	struct fiops_data *fiopsd = e->elevator_data;
+	unsigned int __data;
+	int ret = fiops_var_store(&__data, (page), count);
+	if (__data < 1)
+		__data = 1;
+	else if (__data > 1024)
+		__data = 1024;
+	fiopsd->max_in_flight = __data;
+	return ret;
+}
+
+static ssize_t fiops_max_in_flight_show(struct elevator_queue *e, char *page)
+{
+	struct fiops_data *fiopsd = e->elevator_data;
+	return fiops_var_show(fiopsd->max_in_flight, page);
+}
+
 #undef STORE_FUNCTION
 
 #define FIOPS_ATTR(name) \
@@ -725,6 +753,7 @@ static struct elv_fs_entry fiops_attrs[] = {
 	FIOPS_ATTR(write_scale),
 	FIOPS_ATTR(sync_scale),
 	FIOPS_ATTR(async_scale),
+	__ATTR(max_in_flight, S_IRUGO|S_IWUSR, fiops_max_in_flight_show, fiops_max_in_flight_store),
 	__ATTR_NULL
 };
 

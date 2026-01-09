@@ -1,0 +1,12 @@
+[Unit]
+Description=Deep-sleep handler based on screen-off (polling brightness)
+After=multi-user.target
+ConditionPathExists=/usr/local/sbin/deepsleep-apply.sh
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/screen-deepsleep-handler.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
