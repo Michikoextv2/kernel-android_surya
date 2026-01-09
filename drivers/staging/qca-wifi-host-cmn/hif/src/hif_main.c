@@ -461,8 +461,12 @@ static void __hif_cpu_hotplug_notify(void *context,
 		return;
 
 	if (cpu_up) {
+#if defined(HIF_CPU_PERF_AFFINE_MASK) && !defined(CONFIG_IRQ_SBALANCE)
 		hif_config_irq_set_perf_affinity_hint(GET_HIF_OPAQUE_HDL(scn));
 		hif_debug("Setting affinity for online CPU: %d", cpu);
+#else
+		hif_debug("Skipping affinity set for online CPU %d (SBalance enabled or HIF_CPU_PERF_AFFINE_MASK disabled)", cpu);
+#endif
 	} else {
 		hif_debug("Skip setting affinity for offline CPU: %d", cpu);
 	}

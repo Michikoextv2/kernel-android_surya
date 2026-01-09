@@ -89,8 +89,8 @@ walt_dec_cfs_rq_stats(struct cfs_rq *cfs_rq, struct task_struct *p) {}
  *
  * (default: 6ms * (1 + ilog(ncpus)), units: nanoseconds)
  */
-unsigned int sysctl_sched_latency			= 4000000ULL;
-unsigned int normalized_sysctl_sched_latency		= 4000000ULL;
+unsigned int sysctl_sched_latency			= 5000000ULL; /* 5ms (was 6ms) */
+unsigned int normalized_sysctl_sched_latency		= 3000000ULL; /* 3ms (was 4ms) */
 
 /*
  * Enable/disable honoring sync flag in energy-aware wakeups.
@@ -119,8 +119,8 @@ enum sched_tunable_scaling sysctl_sched_tunable_scaling = SCHED_TUNABLESCALING_L
  *
  * (default: 0.75 msec * (1 + ilog(ncpus)), units: nanoseconds)
  */
-unsigned int sysctl_sched_min_granularity		= 400000ULL;
-unsigned int normalized_sysctl_sched_min_granularity	= 400000ULL;
+unsigned int sysctl_sched_min_granularity		= 500000ULL; /* 0.5ms (was 0.6ms) */
+unsigned int normalized_sysctl_sched_min_granularity	= 333333ULL; /* ~0.333ms (was 0.4ms) */
 
 /*
  * This value is kept at sysctl_sched_latency/sysctl_sched_min_granularity
@@ -3896,13 +3896,61 @@ static inline void util_est_enqueue(struct cfs_rq *cfs_rq,
 				    struct task_struct *p)
 {
 	unsigned int enqueued;
+	unsigned int task_util;
+	unsigned int effective_util;
 
 	if (!sched_feat(UTIL_EST))
 		return;
 
 	/* Update root cfs_rq's estimated utilization */
 	enqueued  = cfs_rq->avg.util_est.enqueued;
-	enqueued += _task_util_est(p);
+
+	/* base task util estimate */
+	task_util = _task_util_est(p);
+	effective_util = task_util;
+
+#if defined(CONFIG_GAMING_MODE) && defined(CONFIG_GAMING_UCLAMP)
+	extern int gaming_mode;
+	extern int uclamp_enable;
+	extern int uclamp_assist;
+	extern int uclamp_boost_percent;
+	extern int uclamp_bucket_default;
+	extern int uclamp_bucket0;
+	extern int uclamp_bucket1;
+	extern int uclamp_bucket2;
+	extern int uclamp_bucket3;
+	extern int gaming_get_task_uclamp_bucket(pid_t pid);
+
+	if (gaming_mode && uclamp_enable) {
+		unsigned int bucket_val = 0;
+		/* per-task mapping takes precedence when assist is enabled */
+		if (uclamp_assist) {
+			int tb = gaming_get_task_uclamp_bucket(p->pid);
+			if (tb > 0)
+				bucket_val = tb;
+		}
+
+		if (!bucket_val) {
+			switch (uclamp_bucket_default) {
+			case 1: bucket_val = uclamp_bucket1; break;
+			case 2: bucket_val = uclamp_bucket2; break;
+			case 3: bucket_val = uclamp_bucket3; break;
+			case 0:
+			default:
+				bucket_val = uclamp_bucket0;
+				break;
+			}
+		}
+
+		if (bucket_val) {
+			unsigned int boosted = (bucket_val * (100U + (unsigned int)uclamp_boost_percent)) / 100U;
+			if (boosted > effective_util)
+				effective_util = boosted;
+		}
+	}
+#endif /* CONFIG_GAMING_MODE && CONFIG_GAMING_UCLAMP */
+
+	enqueued += effective_util;
 	WRITE_ONCE(cfs_rq->avg.util_est.enqueued, enqueued);
 
 	trace_sched_util_est_task(p, &p->se.avg);

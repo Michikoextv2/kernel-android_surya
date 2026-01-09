@@ -238,7 +238,7 @@ static int z_erofs_lz4_decompress(struct z_erofs_decompress_req *rq, u8 *dst)
 		print_hex_dump(KERN_DEBUG, "[out]: ", DUMP_PREFIX_OFFSET,
 			       16, 1, out, rq->outputsize, true);
 
-		if (ret >= 0)
+		if (ret >= 0 && ret < rq->outputsize)
 			memset(out + ret, 0, rq->outputsize - ret);
 		ret = -EIO;
 	} else {

@@ -1154,6 +1154,12 @@ void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
 
 	rcu_read_lock();
 
+	/* Rate-limit potentially noisy OOM printing */
+	if (!printk_ratelimit()) {
+		rcu_read_unlock();
+		return;
+	}
+
 	if (p) {
 		pr_info("Task in ");
 		pr_cont_cgroup_path(task_cgroup(p, memory_cgrp_id));

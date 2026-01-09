@@ -1330,6 +1330,91 @@ config LD_DEAD_CODE_DATA_ELIMINATION
 config SYSCTL
 	bool
 
+config GAMING_MODE
+	bool "Gaming mode tweaks (low impact)"
+	depends on SYSCTL
+	default y
+	---help---
+	Enable a small built-in feature that provides:
+	 - /proc/sys/gaming/gaming_mode to toggle a set of latency-friendly
+	   kernel tunables (sched and TCP slow-start) to favor low ping for games.
+	 - /proc/sys/gaming/fast_charge_boost to indicate a user request for
+	   increased charging current (drivers may honor this flag).
+
+config GAMING_UCLAMP
+	bool "Gaming: uclamp helper"
+	depends on GAMING_MODE && SYSCTL
+	default y
+	help
+	  Enable the uclamp helper used by gaming mode. This provides per-task
+	  and per-name uclamp mapping plus configurable buckets and boost
+	  percentage via /proc/sys/gaming/*. It is intended to be a low-impact
+	  scheduler assist for latency-sensitive workloads such as games.
+
+config GAMING_UCLAMP_ENABLE
+	bool "Enable uclamp helper by default"
+	depends on GAMING_UCLAMP
+	default y
+	help
+	  Set the default runtime state of the uclamp helper when the kernel
+	  boots. This can still be toggled at runtime via /proc/sys/gaming/uclamp_enable.
+
+config GAMING_UCLAMP_ASSIST
+	bool "Enable per-task/name assist by default"
+	depends on GAMING_UCLAMP
+	default y
+	help
+	  When enabled, gaming mode will consult per-task mappings and by-name
+	  mappings to apply uclamp values for matching tasks.
+
+config GAMING_UCLAMP_BOOST_PERCENT
+	int "Default uclamp boost percent"
+	depends on GAMING_UCLAMP
+	default 20
+	help
+	  Percentage boost applied to selected uclamp bucket values. Use 0 for no extra boost.
+
+config GAMING_UCLAMP_BUCKET_DEFAULT
+	int "Default uclamp bucket index (0..3)"
+	depends on GAMING_UCLAMP
+	default 0
+	help
+	  Select the default bucket index used when per-task mapping is not present.
+
+config GAMING_UCLAMP_BUCKET0
+	int "uclamp bucket0 value (0..1024)"
+	depends on GAMING_UCLAMP
+	default 0
+
+config GAMING_UCLAMP_BUCKET1
+	int "uclamp bucket1 value (0..1024)"
+	depends on GAMING_UCLAMP
+	default 128
+
+config GAMING_UCLAMP_BUCKET2
+	int "uclamp bucket2 value (0..1024)"
+	depends on GAMING_UCLAMP
+	default 256
+
+config GAMING_UCLAMP_BUCKET3
+	int "uclamp bucket3 value (0..1024)"
+	depends on GAMING_UCLAMP
+	default 512
+
+config GAMING_UCLAMP_TASK_MAPPING
+	bool "Enable per-pid uclamp mapping support"
+	depends on GAMING_UCLAMP
+	default y
+	help
+	  Expose `/proc/sys/gaming/uclamp_task` to assign uclamp buckets to specific pids.
+
+config GAMING_UCLAMP_BY_NAME
+	bool "Enable uclamp by comm-name mapping"
+	depends on GAMING_UCLAMP
+	default y
+	help
+	  Expose `/proc/sys/gaming/uclamp_by_name` to assign buckets to all tasks matching a command name.
+
 config HAVE_UID16
 	bool
 
