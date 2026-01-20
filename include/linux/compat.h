@@ -23,6 +23,8 @@
 #include <asm/siginfo.h>
 #include <asm/signal.h>
 
+struct __kernel_timespec;
+
 #ifndef COMPAT_USE_64BIT_TIME
 #define COMPAT_USE_64BIT_TIME 0
 #endif

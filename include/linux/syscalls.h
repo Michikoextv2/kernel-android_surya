@@ -19,6 +19,7 @@ struct io_event;
 struct iovec;
 struct itimerspec;
 struct itimerval;
+struct __kernel_timespec;
 struct kexec_segment;
 struct linux_dirent;
 struct linux_dirent64;
