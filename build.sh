@@ -15,7 +15,7 @@ RESET='\033[0m'; BOLD='\033[1m'
 # 📂 Variabel utama
 KERNEL_DIR=$(pwd)
 OUT_DIR="$KERNEL_DIR/out"
-CLANG_DIR="$KERNEL_DIR/../clang-r547379"
+CLANG_DIR="$KERNEL_DIR/../clang-r574158"
 GCC32_DIR="$KERNEL_DIR/../arm-linux-androideabi-4.9"
 ARCH="arm64"
 BUILD_LOG="$KERNEL_DIR/build.log"
