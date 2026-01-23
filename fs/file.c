@@ -654,7 +654,7 @@ static struct file *pick_file(struct files_struct *files, unsigned fd)
 	struct file *file;
 	struct fdtable *fdt;
 
-	spin_lock(&files->file_lock);
+spin_lock(&files->file_lock);
 	fdt = files_fdtable(files);
 	if (fd >= fdt->max_fds) {
 		file = ERR_PTR(-EINVAL);
@@ -729,7 +729,7 @@ static inline void __range_close(struct files_struct *cur_fds, unsigned int fd,
 			cond_resched();
 			continue;
 		}
-
+		
 		/* beyond the last fd in that table */
 		if (PTR_ERR(file) == -EINVAL)
 			return;
