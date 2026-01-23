@@ -392,7 +392,6 @@ int strcmp(const char *cs, const char *ct)
 	}
 	return 0;
 }
-EXPORT_SYMBOL(strcmp);
 #endif
 
 #ifndef __HAVE_ARCH_STRNCMP
@@ -417,7 +416,6 @@ int strncmp(const char *cs, const char *ct, size_t count)
 	}
 	return 0;
 }
-EXPORT_SYMBOL(strncmp);
 #endif
 
 #ifndef __HAVE_ARCH_STRCHR
@@ -433,7 +431,6 @@ char *strchr(const char *s, int c)
 			return NULL;
 	return (char *)s;
 }
-EXPORT_SYMBOL(strchr);
 #endif
 
 #ifndef __HAVE_ARCH_STRCHRNUL
@@ -469,7 +466,6 @@ char *strrchr(const char *s, int c)
 	} while (*s++);
 	return (char *)last;
 }
-EXPORT_SYMBOL(strrchr);
 #endif
 
 #ifndef __HAVE_ARCH_STRNCHR
@@ -542,7 +538,6 @@ size_t strlen(const char *s)
 		/* nothing */;
 	return sc - s;
 }
-EXPORT_SYMBOL(strlen);
 #endif
 
 #ifndef __HAVE_ARCH_STRNLEN
@@ -559,7 +554,6 @@ size_t strnlen(const char *s, size_t count)
 		/* nothing */;
 	return sc - s;
 }
-EXPORT_SYMBOL(strnlen);
 #endif
 
 #ifndef __HAVE_ARCH_STRSPN
@@ -785,7 +779,6 @@ void *memset(void *s, int c, size_t count)
 		*dest.as_u8++ = c;
 	return s;
 }
-EXPORT_SYMBOL(memset);
 #endif
 
 #ifndef __HAVE_ARCH_MEMSET16
@@ -873,7 +866,6 @@ void *memcpy(void *dest, const void *src, size_t count)
 		*tmp++ = *s++;
 	return dest;
 }
-EXPORT_SYMBOL(memcpy);
 #endif
 
 #ifndef __HAVE_ARCH_MEMMOVE
@@ -899,7 +891,6 @@ void *memmove(void *dest, const void *src, size_t count)
 	}
 	return dest;
 }
-EXPORT_SYMBOL(memmove);
 #endif
 
 #ifndef __HAVE_ARCH_MEMCMP
@@ -935,7 +926,6 @@ __visible int memcmp(const void *cs, const void *ct, size_t count)
 			break;
 	return res;
 }
-EXPORT_SYMBOL(memcmp);
 #endif
 
 #ifndef __HAVE_ARCH_BCMP
@@ -1090,7 +1080,6 @@ void *memchr(const void *p, int c, unsigned long length)
 
 	return NULL;
 }
-EXPORT_SYMBOL(memchr);
 #endif
 
 static void *check_bytes8(const u8 *start, u8 value, unsigned int bytes)
