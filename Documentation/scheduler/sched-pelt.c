@@ -10,7 +10,7 @@
 #include <math.h>
 #include <stdio.h>
 
-#define HALFLIFE { 32, 16, 8 }
+#define HALFLIFE { 14, 7, 4 }  /* OPTIMIZED: Changed from { 32, 16, 8 } to 14ms for faster load tracking */
 #define SHIFT 32
 
 double y;

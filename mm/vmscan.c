@@ -168,8 +168,9 @@ struct scan_control {
 
 /*
  * From 0 .. 100.  Higher means more swappy.
+ * OPTIMIZED: Reduced from 60 to 40 - prefer page cache reclaim over swapping to storage
  */
-int vm_swappiness = 60;
+int vm_swappiness = 40;  /* OPTIMIZED: was 60 - keep more file cache to reduce swap I/O */
 /*
  * The total number of pages which are beyond the high watermark within all
  * zones.

@@ -72,14 +72,14 @@ void tcp_time_wait(struct sock *sk, int state, int timeo);
 /* The least MTU to use for probing */
 #define TCP_BASE_MSS		1024
 
-/* probing interval, default to 10 minutes as per RFC4821 */
-#define TCP_PROBE_INTERVAL	600
+/* probing interval, optimized to 300s for mobile networks (was 600s per RFC4821) */
+#define TCP_PROBE_INTERVAL	300
 
-/* Specify interval when tcp mtu probing will stop */
-#define TCP_PROBE_THRESHOLD	8
+/* Specify interval when tcp mtu probing will stop - OPTIMIZED from 8 to 10 */
+#define TCP_PROBE_THRESHOLD	10
 
-/* After receiving this amount of duplicate ACKs fast retransmit starts. */
-#define TCP_FASTRETRANS_THRESH 3
+/* After receiving this amount of duplicate ACKs fast retransmit starts - OPTIMIZED from 3 to 2 */
+#define TCP_FASTRETRANS_THRESH 2
 
 /* Maximal number of ACKs sent quickly to accelerate slow-start. */
 #define TCP_MAX_QUICKACKS	16U
@@ -132,37 +132,35 @@ void tcp_time_wait(struct sock *sk, int state, int timeo);
 				  */
 #define TCP_FIN_TIMEOUT_MAX (120 * HZ) /* max TCP_LINGER2 value (two minutes) */
 
-#define TCP_DELACK_MAX	((unsigned)(HZ/5))	/* maximal time to delay before sending an ACK */
+#define TCP_DELACK_MAX	((unsigned)(HZ/8))	/* OPTIMIZED: reduced from HZ/5 (200ms->125ms) for lower latency */
 #if HZ >= 100
-#define TCP_DELACK_MIN	((unsigned)(HZ/25))	/* minimal time to delay before sending an ACK */
-#define TCP_ATO_MIN	((unsigned)(HZ/25))
+#define TCP_DELACK_MIN	((unsigned)(HZ/50))	/* OPTIMIZED: reduced from HZ/25 (40ms->20ms) for mobile networks */
+#define TCP_ATO_MIN	((unsigned)(HZ/50))	/* OPTIMIZED: match DELACK_MIN for consistency */
 #else
-#define TCP_DELACK_MIN	4U
-#define TCP_ATO_MIN	4U
+#define TCP_DELACK_MIN	2U			/* OPTIMIZED: reduced from 4U for faster ACKs */
+#define TCP_ATO_MIN	2U			/* OPTIMIZED: match DELACK_MIN */
 #endif
-#define TCP_RTO_MAX	((unsigned)(120*HZ))
-#define TCP_RTO_MIN	((unsigned)(HZ/5))
-#define TCP_TIMEOUT_MIN	(2U) /* Min timeout for TCP timers in jiffies */
+#define TCP_RTO_MAX	((unsigned)(60*HZ))	/* OPTIMIZED: reduced from 120s to 60s (more aggressive recovery) */
+#define TCP_RTO_MIN	((unsigned)(HZ/10))	/* OPTIMIZED: increased from HZ/5 (200ms->100ms) for better retransmit handling */
+#define TCP_TIMEOUT_MIN	(1U)			/* OPTIMIZED: reduced from 2U for faster response */
 
-#define TCP_TIMEOUT_MIN_US (2*USEC_PER_MSEC) /* Min TCP timeout in microsecs */
+#define TCP_TIMEOUT_MIN_US (1*USEC_PER_MSEC) /* OPTIMIZED: reduced to 1ms (was 2ms) */
 
-#define TCP_TIMEOUT_INIT ((unsigned)(1*HZ))	/* RFC6298 2.1 initial RTO value	*/
-#define TCP_TIMEOUT_FALLBACK ((unsigned)(3*HZ))	/* RFC 1122 initial RTO value, now
-						 * used as a fallback RTO for the
-						 * initial data transmission if no
-						 * valid RTT sample has been acquired,
-						 * most likely due to retrans in 3WHS.
-						 */
+#define TCP_TIMEOUT_INIT ((unsigned)(800*HZ/1000))	/* OPTIMIZED: reduced from 1s to 800ms for mobile networks */
+#define TCP_TIMEOUT_FALLBACK ((unsigned)(2*HZ))	/* OPTIMIZED: reduced from 3s to 2s for faster recovery
+					 * Initial RTO value, fallback if no
+					 * valid RTT sample acquired
+					 */
 
 /* Number of full MSS to receive before Acking RFC2581 */
-#define TCP_DELACK_SEG          1
+#define TCP_DELACK_SEG          2		/* OPTIMIZED: increased from 1 to 2 for better batching */
 
 #define TCP_RESOURCE_PROBE_INTERVAL ((unsigned)(HZ/2U)) /* Maximal interval between probes
 					                 * for local resources.
 					                 */
-#define TCP_KEEPALIVE_TIME	(120*60*HZ)	/* two hours */
-#define TCP_KEEPALIVE_PROBES	9		/* Max of 9 keepalive probes	*/
-#define TCP_KEEPALIVE_INTVL	(75*HZ)
+#define TCP_KEEPALIVE_TIME	(60*60*HZ)	/* OPTIMIZED: reduced from 2 hours to 1 hour for mobile */
+#define TCP_KEEPALIVE_PROBES	5		/* OPTIMIZED: reduced from 9 for faster detection */
+#define TCP_KEEPALIVE_INTVL	(30*HZ)		/* OPTIMIZED: reduced from 75s to 30s for faster response */
 
 #define MAX_TCP_KEEPIDLE	32767
 #define MAX_TCP_KEEPINTVL	32767

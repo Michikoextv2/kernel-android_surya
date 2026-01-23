@@ -282,9 +282,9 @@
 #include <asm/ioctls.h>
 #include <net/busy_poll.h>
 
-int sysctl_tcp_min_tso_segs __read_mostly = 2;
+int sysctl_tcp_min_tso_segs __read_mostly = 1;	/* OPTIMIZED: reduced from 2 for lower latency on mobile */
 
-int sysctl_tcp_autocorking __read_mostly = 1;
+int sysctl_tcp_autocorking __read_mostly = 0;	/* OPTIMIZED: disabled for latency (was 1) */
 
 struct percpu_counter tcp_orphan_count;
 EXPORT_SYMBOL_GPL(tcp_orphan_count);

@@ -278,15 +278,15 @@ if DEVFREQ_BOOST
 
 config DEVFREQ_INPUT_BOOST_DURATION_MS
 	int "Input boost duration"
-	default "100"
+	default "60"
 	help
-	  Input boost duration in milliseconds for all boostable devices.
+	  Input boost duration in milliseconds for all boostable devices. OPTIMIZED: 100ms → 60ms for balanced perf
 
 config DEVFREQ_WAKE_BOOST_DURATION_MS
 	int "Wake boost duration"
-	default "1000"
+	default "500"
 	help
-	  Wake boost duration in milliseconds for all boostable devices.
+	  Wake boost duration in milliseconds for all boostable devices. OPTIMIZED: 1000ms → 500ms for faster wake
 
 config DEVFREQ_MSM_CPUBW_BOOST_FREQ
 	int "Boost freq for cpubw device"
