@@ -135,3 +135,4 @@ log.txt
 tc/
 clang/
 anykernel/
+build.log
