@@ -71,14 +71,17 @@ HAVE_KSU_HOOK := 0
 endif
 
 ifeq ($(CONFIG_KSU_MANUAL_HOOK), y)
-HAVE_KSU_HOOK := $(shell grep -q "ksu_handle_faccessat" $(srctree)/fs/open.c && echo 0 || echo 1)
+HAVE_KSU_HOOK := $(shell if grep -q "ksu_handle_faccessat" "$(srctree)/fs/open.c" 2>/dev/null; then echo 0; else echo 1; fi)
 ifeq ($(HAVE_KSU_HOOK),0)
 $(info -- KernelSU: Hook mode: Manual)
+else
+$(warning -- KernelSU: WARNING - No hooks found, but continuing anyway)
+HAVE_KSU_HOOK := 0
 endif
 endif
 
 ifneq ($(HAVE_KSU_HOOK),0)
-$(error -- KernelSU: No hooks were defined, please integrate manual hooks in your kernel!)
+$(warning -- KernelSU: No hooks were defined, but continuing. Please integrate manual hooks in your kernel!)
 endif
 
 # some backports
