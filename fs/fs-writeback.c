@@ -2208,12 +2208,14 @@ void __mark_inode_dirty(struct inode *inode, int flags)
 			wakeup_bdi = inode_io_list_move_locked(inode, wb,
 							       dirty_list);
 
-
-			 * to make sure background write-back happens
-			 * later.
-			 */
-			if (bdi_cap_writeback_dirty(wb->bdi) && wakeup_bdi)
-				wb_wakeup_delayed(wb);
+		/*
+		 * If this is the first dirty inode for this bdi,
+		 * we have to wake-up the corresponding bdi thread
+		 * to make sure background write-back happens
+		 * later.
+		 */
+		if (bdi_cap_writeback_dirty(wb->bdi) && wakeup_bdi)
+			wb_wakeup_delayed(wb);
 
 			spin_unlock(&wb->list_lock);
 			trace_writeback_dirty_inode_enqueue(inode);

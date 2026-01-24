@@ -539,7 +539,7 @@ void pde_put(struct proc_dir_entry *pde)
 
 static void pde_erase(struct proc_dir_entry *pde, struct proc_dir_entry *parent)
 {
-	rb_erase(&pde->subdir_node, &parent->subdir);
+	rb_erase_cached(&pde->subdir_node, &parent->subdir);
 	RB_CLEAR_NODE(&pde->subdir_node);
 }
 
