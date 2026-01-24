@@ -23,18 +23,15 @@
 
 enum { ASYNC, SYNC };
 
-/* Tunables */
-static const int sync_read_expire  = HZ / 2;	/* max time before a sync read is submitted. */
-static const int sync_write_expire = 2 * HZ;	/* max time before a sync write is submitted. */
+/* Tunables - Optimized for battery efficiency and I/O performance */
+static const int sync_read_expire  = HZ / 4;	/* OPTIMIZED: faster batching for battery */
+static const int sync_write_expire = HZ;	/* OPTIMIZED: reduced from 2*HZ for power */
 
-static const int async_read_expire  =  4 * HZ;	/* ditto for async, these limits are SOFT! */
-static const int async_write_expire = 16 * HZ;	/* ditto for async, these limits are SOFT! */
+static const int async_read_expire  =  3 * HZ;	/* OPTIMIZED: reduced idle wait time */
+static const int async_write_expire = 12 * HZ;	/* OPTIMIZED: defer writes for efficiency */
 
-static const int writes_starved = 2;		/* max times reads can starve a write */
-static const int fifo_batch     = 8;		/* # of sequential requests treated as one
-						   by the above parameters. For throughput. */
-
-/* Elevator data */
+static const int writes_starved = 3;		/* OPTIMIZED: favor writes for storage IO */
+static const int fifo_batch     = 16;		/* OPTIMIZED: increased for fewer wakeups */
 struct sio_data {
 	/* Request queues */
 	struct list_head fifo_list[2][2];

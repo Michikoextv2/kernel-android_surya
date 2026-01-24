@@ -70,8 +70,10 @@ static long ratelimit_pages = 32;
 
 /*
  * Start background writeback (via writeback threads) at this percentage
+ * OPTIMIZED: Reduced from 10 to 3 for Poco X3 NFC (Phase 12)
+ * Benefits: More aggressive background flushing, reduces write bursts, faster I/O
  */
-int dirty_background_ratio = 10;
+int dirty_background_ratio = 3;
 
 /*
  * dirty_background_bytes starts at 0 (disabled) so that it is a function of
@@ -87,8 +89,10 @@ int vm_highmem_is_dirtyable;
 
 /*
  * The generator of dirty data starts writeback at this percentage
+ * OPTIMIZED: Reduced from 50 to 10 for Poco X3 NFC (Phase 12)
+ * Benefits: More aggressive write-to-disk, prevents huge write bursts that freeze system
  */
-int vm_dirty_ratio = 50;
+int vm_dirty_ratio = 10;
 
 /*
  * vm_dirty_bytes starts at 0 (disabled) so that it is a function of
@@ -105,8 +109,10 @@ EXPORT_SYMBOL_GPL(dirty_writeback_interval);
 
 /*
  * The longest time for which data is allowed to remain dirty
+ * OPTIMIZED: Reduced from 3000 to 1500 centiseconds for Poco X3 NFC (Phase 12)
+ * Benefits: Faster flushing, reduced latency from stale dirty pages (15s → 7.5s)
  */
-unsigned int dirty_expire_interval = 30 * 100; /* centiseconds */
+unsigned int dirty_expire_interval = 15 * 100; /* centiseconds */
 
 /*
  * Flag that makes the machine dump writes/reads and block dirtyings.

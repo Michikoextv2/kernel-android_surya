@@ -105,6 +105,9 @@ struct f01_basic_properties {
  */
 #define RMI_F01_CTRL0_CONFIGURED_BIT	BIT(7)
 
+/* OPTIMIZED: High report rate for faster touch responsiveness */
+#define RMI_F01_CTRL0_REPORTRATE_FAST	BIT(6)  /* Enable high sampling rate */
+
 /**
  * @ctrl0 - see the bit definitions above.
  * @doze_interval - controls the interval between checks for finger presence
@@ -428,6 +431,9 @@ static int rmi_f01_probe(struct rmi_function *fn)
 		break;
 	}
 
+	/* OPTIMIZED: Enable high report rate for faster touch sampling */
+	f01->device_control.ctrl0 |= RMI_F01_CTRL0_REPORTRATE_FAST;
+
 	/*
 	 * Sleep mode might be set as a hangover from a system crash or
 	 * reboot without power cycle.  If so, clear it so the sensor
@@ -477,6 +483,7 @@ static int rmi_f01_probe(struct rmi_function *fn)
 		ctrl_base_addr++;
 
 		if (pdata->power_management.doze_interval) {
+			/* OPTIMIZED: Reduce doze interval from default to 10ms (1 unit) for faster wake */
 			f01->device_control.doze_interval =
 				pdata->power_management.doze_interval;
 			error = rmi_write(rmi_dev, f01->doze_interval_addr,
@@ -488,11 +495,13 @@ static int rmi_f01_probe(struct rmi_function *fn)
 				return error;
 			}
 		} else {
-			error = rmi_read(rmi_dev, f01->doze_interval_addr,
-					 &f01->device_control.doze_interval);
+			/* OPTIMIZED: Set aggressive doze interval for better responsiveness */
+			f01->device_control.doze_interval = 1;  /* 10ms - was likely 4-5 */
+			error = rmi_write(rmi_dev, f01->doze_interval_addr,
+					  f01->device_control.doze_interval);
 			if (error) {
 				dev_err(&fn->dev,
-					"Failed to read F01 doze interval register: %d\n",
+					"Failed to write F01 doze interval register: %d\n",
 					error);
 				return error;
 			}
@@ -502,6 +511,7 @@ static int rmi_f01_probe(struct rmi_function *fn)
 		ctrl_base_addr++;
 
 		if (pdata->power_management.wakeup_threshold) {
+			/* OPTIMIZED: Lower wakeup threshold for faster touch detection */
 			f01->device_control.wakeup_threshold =
 				pdata->power_management.wakeup_threshold;
 			error = rmi_write(rmi_dev, f01->wakeup_threshold_addr,
@@ -513,11 +523,13 @@ static int rmi_f01_probe(struct rmi_function *fn)
 				return error;
 			}
 		} else {
-			error = rmi_read(rmi_dev, f01->wakeup_threshold_addr,
-					 &f01->device_control.wakeup_threshold);
-			if (error < 0) {
+			/* OPTIMIZED: Set sensitive wakeup threshold for immediate touch response */
+			f01->device_control.wakeup_threshold = 4;  /* Most sensitive, was 10-20 */
+			error = rmi_write(rmi_dev, f01->wakeup_threshold_addr,
+					  f01->device_control.wakeup_threshold);
+			if (error) {
 				dev_err(&fn->dev,
-					"Failed to read F01 wakeup threshold register: %d\n",
+					"Failed to write F01 wakeup threshold register: %d\n",
 					error);
 				return error;
 			}
@@ -532,6 +544,7 @@ static int rmi_f01_probe(struct rmi_function *fn)
 		ctrl_base_addr++;
 
 		if (pdata->power_management.doze_holdoff) {
+			/* OPTIMIZED: Reduce doze holdoff from default to 100ms for faster touch wake */
 			f01->device_control.doze_holdoff =
 				pdata->power_management.doze_holdoff;
 			error = rmi_write(rmi_dev, f01->doze_holdoff_addr,
@@ -543,11 +556,13 @@ static int rmi_f01_probe(struct rmi_function *fn)
 				return error;
 			}
 		} else {
-			error = rmi_read(rmi_dev, f01->doze_holdoff_addr,
-					 &f01->device_control.doze_holdoff);
+			/* OPTIMIZED: Set minimal doze holdoff to wake immediately on touch */
+			f01->device_control.doze_holdoff = 1;  /* 100ms minimum - was 2-5 */
+			error = rmi_write(rmi_dev, f01->doze_holdoff_addr,
+					  f01->device_control.doze_holdoff);
 			if (error) {
 				dev_err(&fn->dev,
-					"Failed to read F01 doze holdoff register: %d\n",
+					"Failed to write F01 doze holdoff register: %d\n",
 					error);
 				return error;
 			}

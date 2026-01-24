@@ -106,15 +106,17 @@
 /*
  * The PULSE value is added to metrics when they grow and the DECAY_SHIFT value
  * is used for decreasing metrics on a regular basis.
+ * OPTIMIZED: Increased PULSE for deeper state preference, reduced DECAY for state retention
  */
-#define PULSE		1024
-#define DECAY_SHIFT	3
+#define PULSE		2048  /* OPTIMIZED: was 1024 - encourages deeper sleep states */
+#define DECAY_SHIFT	4     /* OPTIMIZED: was 3 - retain deep state metrics longer */
 
 /*
  * Number of the most recent idle duration values to take into consideration for
  * the detection of recent early wakeup patterns.
+ * OPTIMIZED: Increased to reduce aggressive shallow state selection when idle
  */
-#define NR_RECENT	9
+#define NR_RECENT	16    /* OPTIMIZED: was 9 - less aggressive early wakeup detection */
 
 /**
  * struct teo_bin - Metrics used by the TEO cpuidle governor.
