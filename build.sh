@@ -59,8 +59,8 @@ export PATH="$CLANG_DIR/bin:$GCC32_DIR/bin:$PATH"
 
 # Set environment variables
 	export USE_CCACHE=1
-	export KBUILD_BUILD_HOST=michiko
-	export KBUILD_BUILD_USER=archlinux
+	export KBUILD_BUILD_HOST=archlinux
+	export KBUILD_BUILD_USER=builder
 	
 # 🔍 Auto detect defconfig
 CONFIG_PATH="$KERNEL_DIR/arch/arm64/configs"
