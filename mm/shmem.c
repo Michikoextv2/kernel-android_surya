@@ -1006,9 +1006,6 @@ static int shmem_getattr(const struct path *path, struct kstat *stat,
 	generic_fillattr(inode, stat);
 	inode_unlock_shared(inode);
 
-	if (is_huge_enabled(sb_info))
-		stat->blksize = HPAGE_PMD_SIZE;
-
 	return 0;
 }
 
