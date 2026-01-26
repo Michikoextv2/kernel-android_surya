@@ -323,39 +323,62 @@ static void msm_restart_prepare(const char *cmd)
 		if (!strncmp(cmd, "bootloader", 10)) {
 			qpnp_pon_set_restart_reason(
 				PON_RESTART_REASON_BOOTLOADER);
-			__raw_writel(0x77665500, restart_reason);
+			if (restart_reason)
+				__raw_writel(0x77665500, restart_reason);
+			else
+				pr_warn("restart_reason not mapped, bootloader mode not set\n");
 		} else if (!strncmp(cmd, "recovery", 8)) {
 			qpnp_pon_set_restart_reason(
 				PON_RESTART_REASON_RECOVERY);
-			__raw_writel(0x77665502, restart_reason);
+			if (restart_reason)
+				__raw_writel(0x77665502, restart_reason);
+			else
+				pr_warn("restart_reason not mapped, recovery mode not set\n");
 		} else if (!strcmp(cmd, "rtc")) {
 			qpnp_pon_set_restart_reason(
 				PON_RESTART_REASON_RTC);
-			__raw_writel(0x77665503, restart_reason);
+			if (restart_reason)
+				__raw_writel(0x77665503, restart_reason);
+			else
+				pr_warn("restart_reason not mapped, rtc mode not set\n");
 		} else if (!strcmp(cmd, "dm-verity device corrupted")) {
 			qpnp_pon_set_restart_reason(
 				PON_RESTART_REASON_DMVERITY_CORRUPTED);
-			__raw_writel(0x77665508, restart_reason);
+			if (restart_reason)
+				__raw_writel(0x77665508, restart_reason);
+			else
+				pr_warn("restart_reason not mapped, dmverity corrupted mode not set\n");
 		} else if (!strcmp(cmd, "dm-verity enforcing")) {
 			qpnp_pon_set_restart_reason(
 				PON_RESTART_REASON_DMVERITY_ENFORCE);
-			__raw_writel(0x77665509, restart_reason);
+			if (restart_reason)
+				__raw_writel(0x77665509, restart_reason);
+			else
+				pr_warn("restart_reason not mapped, dmverity enforcing mode not set\n");
 		} else if (!strcmp(cmd, "keys clear")) {
 			qpnp_pon_set_restart_reason(
 				PON_RESTART_REASON_KEYS_CLEAR);
-			__raw_writel(0x7766550a, restart_reason);
+			if (restart_reason)
+				__raw_writel(0x7766550a, restart_reason);
+			else
+				pr_warn("restart_reason not mapped, keys clear mode not set\n");
 		} else if (!strncmp(cmd, "oem-", 4)) {
 			unsigned long code;
 			int ret;
 
 			ret = kstrtoul(cmd + 4, 16, &code);
-			if (!ret)
+			if (!ret && restart_reason)
 				__raw_writel(0x6f656d00 | (code & 0xff),
 					     restart_reason);
+			else if (!restart_reason)
+				pr_warn("restart_reason not mapped, oem mode not set\n");
 		} else if (!strncmp(cmd, "edl", 3)) {
 			enable_emergency_dload_mode();
 		} else {
-			__raw_writel(0x77665501, restart_reason);
+			if (restart_reason)
+				__raw_writel(0x77665501, restart_reason);
+			else
+				pr_warn("restart_reason not mapped, default mode not set\n");
 		}
 	}
 
