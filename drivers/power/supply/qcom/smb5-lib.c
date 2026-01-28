@@ -2855,6 +2855,63 @@ extern bool lct_backlight_off;
 extern int LctIsInCall;
 extern int LctThermal;
 
+/* Battery Thermal Charging Control - Direct Charger Integration */
+#define BATTERY_STOP_CHARGE_TEMP        48000   /* 48°C */
+#define BATTERY_RESUME_CHARGE_TEMP      46000   /* 46°C */
+#define BATTERY_FAST_CHARGE_TEMP        40000   /* 40°C */
+#define FAST_CHARGE_CURRENT_MA          2500
+#define NORMAL_CHARGE_CURRENT_MA        1500
+#define SLOW_CHARGE_CURRENT_MA          500
+
+static void smblib_batt_thermal_charging_control(struct smb_charger *chg)
+{
+	union power_supply_propval val;
+	int rc, batt_temp_ma;
+	int batt_temp = 0;
+
+	if (!chg->bms_psy)
+		return;
+
+	/* Read battery temperature from BMS */
+	rc = smblib_get_prop_from_bms(chg, POWER_SUPPLY_PROP_TEMP, &val);
+	if (rc < 0) {
+		smblib_dbg(chg, PR_MISC, "Failed to read batt temp rc=%d\n", rc);
+		return;
+	}
+
+	batt_temp = val.intval;
+
+	/* Temperature-based charging current control */
+	if (batt_temp >= BATTERY_STOP_CHARGE_TEMP) {
+		/* >= 48°C: Stop charging */
+		batt_temp_ma = 0;
+		smblib_dbg(chg, PR_MISC, "Batt temp %d°C: STOP charging\n", batt_temp / 1000);
+	} else if (batt_temp >= BATTERY_RESUME_CHARGE_TEMP) {
+		/* 46-48°C: Slow charging */
+		batt_temp_ma = SLOW_CHARGE_CURRENT_MA * 1000;
+		smblib_dbg(chg, PR_MISC, "Batt temp %d°C: SLOW charging %dmA\n", 
+			   batt_temp / 1000, SLOW_CHARGE_CURRENT_MA);
+	} else if (batt_temp >= BATTERY_FAST_CHARGE_TEMP) {
+		/* 40-46°C: Normal charging */
+		batt_temp_ma = NORMAL_CHARGE_CURRENT_MA * 1000;
+		smblib_dbg(chg, PR_MISC, "Batt temp %d°C: NORMAL charging %dmA\n", 
+			   batt_temp / 1000, NORMAL_CHARGE_CURRENT_MA);
+	} else {
+		/* < 40°C: Fast charging */
+		batt_temp_ma = FAST_CHARGE_CURRENT_MA * 1000;
+		smblib_dbg(chg, PR_MISC, "Batt temp %d°C: FAST charging %dmA\n", 
+			   batt_temp / 1000, FAST_CHARGE_CURRENT_MA);
+	}
+
+	/* Apply charging current limit via THERMAL_DAEMON_VOTER */
+	if (batt_temp_ma > 0) {
+		vote(chg->fcc_votable, "BATT_THERMAL_VOTER", true, batt_temp_ma);
+	} else {
+		/* Disable charging */
+		vote(chg->chg_disable_votable, "BATT_THERMAL_VOTER", true, 0);
+	}
+}
+
 int smblib_set_prop_system_temp_level(struct smb_charger *chg,
 				const union power_supply_propval *val)
 {
@@ -5842,6 +5899,9 @@ irqreturn_t batt_temp_changed_irq_handler(int irq, void *data)
 				rc);
 		return IRQ_HANDLED;
 	}
+
+	/* Apply battery thermal charging control on temp change */
+	smblib_batt_thermal_charging_control(chg);
 
 	return IRQ_HANDLED;
 }
@@ -9211,6 +9271,9 @@ static void jeita_update_work(struct work_struct *work)
 				rc);
 		goto out;
 	}
+
+	/* Apply battery thermal charging control */
+	smblib_batt_thermal_charging_control(chg);
 
 	chg->jeita_configured = JEITA_CFG_COMPLETE;
 	return;
